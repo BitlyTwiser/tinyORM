@@ -50,19 +50,18 @@ func TestSloggerToFile(t *testing.T) {
 
 	defer f.Close()
 
-	slogger.NewLogger(f).LogEvent("warn", "Something happened", slogger.Arguments("one", "two", "Another", false, "four", true, "bob"))
-	slogger.NewLogger(f).LogEvent("warn", "Something happened", slogger.Arguments("one", "two", "Another", false, "four", true))
+	// fileLogger := slogger.NewLogger(f)
+	// fileLogger.LogEvent("warn", "Something one", "one", "two", "Another", false, "four", true, "bob")
+	// fileLogger.LogEvent("warn", "Something two", "one", "two", "Another", false, "four", true)
+	// fileLogger.LogEvent("warn", "Something three", "hic", "leaf", "Another")
 
-	slogger.NewLogger(f).LogEvent("warn", "Something happened", slogger.Arguments("hic", "leaf", "Another"))
-
-	slogger.NewLogger(os.Stdout).LogEvent("info", "Something happened", slogger.Arguments("key", "value", "AnotherKey", false, "four", 123123))
-
-	slogger.NewLogger(os.Stdout).LogEvent("debug", "Something happened", map[string]any{"one": "two", "Another": false, "four": true})
-
-	slogger.NewLogger(os.Stdout).LogEvent("info", "Hi mom!")
-	slogger.NewLogger(os.Stdout).LogEvent("debug", "Hi mom!")
-
-	slogger.NewLogger(os.Stdout).LogError("error", fmt.Errorf("something died"))
-
-	slogger.NewLogger(os.Stdout).LogError("error", fmt.Errorf("something died"), slogger.Arguments(1, 2, 3, "masdasd"))
+	stdoutLogger := slogger.NewLogger(os.Stdout)
+	stdoutLogger.LogEvent("info", "Something four", "key", "value", "AnotherKey", false, "four", 123123)
+	stdoutLogger.LogEvent("info", "Something five", "key")
+	stdoutLogger.LogEvent("debug", "Something six", map[string]any{"one": "two", "Another": false, "four": true})
+	stdoutLogger.LogEvent("info", "Something debug", map[string]any{"one": "two", "Another": false, "four": true})
+	stdoutLogger.LogEvent("info", "Hi mom!")
+	stdoutLogger.LogEvent("debug", "Hi mom!")
+	stdoutLogger.LogError("error", fmt.Errorf("something died"))
+	stdoutLogger.LogError("error", fmt.Errorf("something died"), 1, 2, 3, "masdasd")
 }

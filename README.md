@@ -12,6 +12,7 @@ development:
   dialect: postgres
   database: development 
   user: devUser 
+  connect: true
   password: devPassword 
   host: 127.0.0.1
   port: 5432
@@ -22,10 +23,12 @@ production-read-only:
   database: ro 
   user: ro-user 
   password: ro-password 
+  connect: false
   host: 127.0.0.1
   port: 5432
   pool: 5
 ```
 
 - Connection without a flag will create a connection to EACH specific connection.
-- You can switch to the connection anytime using the db.conn command. 
+- if Connect is false, a connection will not be established. If true or missing, a connection will be attempted to the given database. 
+- You can switch to the connection anytime using the <insert stuff> command. 

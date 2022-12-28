@@ -1,9 +1,13 @@
 package databases
 
-import "sync"
+import (
+	"database/sql"
+	"sync"
+)
 
 type Postgres struct {
-	mu sync.Mutex
+	connections map[string]*sql.DB
+	mu          sync.Mutex
 }
 
 var _ DatabaseHandler = (*Postgres)(nil)
@@ -35,4 +39,16 @@ func (pd *Postgres) Where(stmt string, args ...any) error {
 	pd.mu.Lock()
 	defer pd.mu.Unlock()
 	return nil
+}
+
+func (pd *Postgres) Raw(query string) (any, error) {
+	return nil, nil
+}
+
+func (pd *Postgres) SetDB(connInfo map[string]*sql.DB) {
+	pd.connections = connInfo
+}
+
+func (pd *Postgres) QueryString(connInfo DBConfig) string {
+	return ""
 }

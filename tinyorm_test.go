@@ -1,6 +1,10 @@
 package tinyorm_test
 
-import "testing"
+import (
+	"testing"
+
+	tinyorm "github.com/BitlyTwiser/tinyORM"
+)
 
 func TestInitializeDatabase(t *testing.T) {
 	tests := []struct {
@@ -22,4 +26,8 @@ func TestInitializeDatabase(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestDatabaseConnection(t *testing.T) {
+	tinyorm.Connect("development")
 }

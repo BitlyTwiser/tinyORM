@@ -7,61 +7,54 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/BitlyTwiser/tinyORM/pkg/databases"
+	"github.com/BitlyTwiser/tinyORM/pkg/logger"
 	"gopkg.in/yaml.v2"
 )
-
-var Connections map[string]*DB
-
-type dbConfig struct {
-	Port     int    `yaml:"port"`
-	Host     string `yaml:"host"`
-	Pool     int    `yaml:"pool"`
-	Password string `yaml:"password"`
-	User     string `yaml:"user"`
-	Database string `yaml:"database"`
-	Dialect  string `yaml:"dialect"`
-}
 
 type DB struct {
 	Conn *sql.DB
 }
 
-// This will be a variadic function of multiple dbConnTypes (strings)
-// If nothing is passed (len(dbConnType == 0 )) then we will map ALL connections in the database.yml file.
-func initDatabase(dbConnType string) (*DB, error) {
+// Initialize database connection via loading the database.yml for the given connection.
+// will set the database handlers to the appropriate *sql.DB
+func InitDatabase(dbConnType string) error {
 	var db *sql.DB
-
-	// Default to development
-	if dbConnType == "" {
-		dbConnType = "development"
-	}
+	var handle databases.DatabaseHandler
+	var found bool
 
 	config, err := loadDatabaseConfig(dbConnType)
 
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	for _, connInfo := range config {
-		db, err = sql.Open(connInfo.Dialect, connInfo.String())
+	connConfig, found := config[dbConnType]
 
-		if err != nil {
-			return nil, err
-		}
+	if !found || connConfig == nil {
+		return logger.Log.LogError("database connectiong not found", fmt.Errorf("database connection %s was not found in database.yml. Please check the file", dbConnType))
+	}
+
+	if handle, found = databases.Databases[connConfig.Dialect]; !found {
+		return logger.Log.LogError("database dialect not not supported", fmt.Errorf("please check provided dialect in database.yml. Provided dialect: %v", connConfig.Dialect))
+	}
+
+	db, err = sql.Open(connConfig.Dialect, handle.QueryString(*connConfig))
+	if err != nil {
+		return logger.Log.LogError("error connecting", err)
 	}
 
 	err = db.Ping()
 	if err != nil {
-		return nil, fmt.Errorf("error connecting to database. error %v", err.Error())
+		return logger.Log.LogError("error connecting to database", err)
 	}
 
-	return &DB{Conn: db}, nil
+	handle.SetDB(map[string]*sql.DB{dbConnType: db})
+
+	return nil
 }
 
-// Depends on a database.yml file to be located next to the database.go
-// Will parse multiple connections i.e. Development, Production
-// Will hold a connection to EACH unless stated as False in config file.
-func loadDatabaseConfig(dbConnType string) (map[string]*dbConfig, error) {
+func loadDatabaseConfig(dbConnType string) (map[string]*databases.DBConfig, error) {
 	path, err := filepath.Abs("../../database.yml")
 	if err != nil {
 		return nil, err
@@ -75,7 +68,8 @@ func loadDatabaseConfig(dbConnType string) (map[string]*dbConfig, error) {
 		}
 	}
 
-	config := map[string]*dbConfig{dbConnType: new(dbConfig)}
+	// Can be an array of connTypes
+	config := map[string]*databases.DBConfig{dbConnType: new(databases.DBConfig)}
 	err = readDatabaseFile(f, config)
 
 	if err != nil {
@@ -85,7 +79,7 @@ func loadDatabaseConfig(dbConnType string) (map[string]*dbConfig, error) {
 	return config, nil
 }
 
-func readDatabaseFile(f io.Reader, config map[string]*dbConfig) error {
+func readDatabaseFile(f io.Reader, config map[string]*databases.DBConfig) error {
 	d, err := io.ReadAll(f)
 
 	if err != nil {
@@ -99,8 +93,4 @@ func readDatabaseFile(f io.Reader, config map[string]*dbConfig) error {
 	}
 
 	return nil
-}
-
-func (c dbConfig) String() string {
-	return fmt.Sprintf("host=%s port=%d user=%s password =%s dbname=%s sslmode=%s", c.Host, c.Port, c.User, c.Password, c.Database, "disable")
 }

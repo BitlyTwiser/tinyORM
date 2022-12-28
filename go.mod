@@ -3,7 +3,7 @@ module github.com/BitlyTwiser/tinyORM
 go 1.19
 
 require (
-	github.com/BitlyTwiser/slogger v1.0.0
+	github.com/BitlyTwiser/slogger v1.0.1
 	gopkg.in/yaml.v2 v2.4.0
 )
 

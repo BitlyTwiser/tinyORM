@@ -3,6 +3,8 @@ module github.com/BitlyTwiser/tinyORM
 go 1.19
 
 require (
-	golang.org/x/exp v0.0.0-20221217163422-3c43f8badb15
+	github.com/BitlyTwiser/slogger v1.0.0
 	gopkg.in/yaml.v2 v2.4.0
 )
+
+require golang.org/x/exp v0.0.0-20221227203929-1b447090c38c // indirect

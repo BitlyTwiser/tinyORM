@@ -2,13 +2,16 @@ package databuilder
 
 import (
 	"fmt"
-	"log"
+	"os"
 	"reflect"
+
+	"github.com/BitlyTwiser/slogger"
 )
 
 // SerializeData will serialize data from any passed in model.
 // The model data will be used within the insert, create, or update methods
 func SerializeData(data any) error {
+	log := slogger.NewLogger(os.Stdout)
 	t := reflect.TypeOf(data)
 
 	if reflect.ValueOf(data).Kind() != reflect.Ptr {
@@ -16,7 +19,7 @@ func SerializeData(data any) error {
 	}
 
 	val := reflect.ValueOf(data).Elem()
-	log.Println(val)
+	log.LogEvent("warn", "error reflecting value", val)
 
 	sFields := reflect.VisibleFields(t)
 

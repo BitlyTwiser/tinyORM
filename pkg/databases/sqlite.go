@@ -61,7 +61,9 @@ func (s *SQLite) Raw(query string) (any, error) {
 }
 
 func (s *SQLite) SetDB(connInfo map[string]*sql.DB) {
-	s.connections = connInfo
+	for k, v := range connInfo {
+		s.connections[k] = v
+	}
 }
 
 func (s *SQLite) QueryString(connInfo DBConfig) string {

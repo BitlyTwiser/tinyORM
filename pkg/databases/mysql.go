@@ -51,7 +51,9 @@ func (m *Mysql) Raw(query string) (any, error) {
 
 // Alters the database that queries are for.
 func (m *Mysql) SetDB(connInfo map[string]*sql.DB) {
-	m.connections = connInfo
+	for k, v := range connInfo {
+		m.connections[k] = v
+	}
 }
 
 func (m *Mysql) QueryString(connInfo DBConfig) string {

@@ -49,7 +49,9 @@ func (pd *Postgres) Raw(query string) (any, error) {
 }
 
 func (pd *Postgres) SetDB(connInfo map[string]*sql.DB) {
-	pd.connections = connInfo
+	for k, v := range connInfo {
+		pd.connections[k] = v
+	}
 }
 
 func (pd *Postgres) QueryString(c DBConfig) string {

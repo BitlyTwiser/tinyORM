@@ -6,9 +6,9 @@ var Databases map[string]DatabaseHandler
 
 func init() {
 	Databases = map[string]DatabaseHandler{
-		"mysql":    &Mysql{},
-		"postgres": &Postgres{},
-		"sqlite":   &SQLite{},
+		"mysql":    &Mysql{connections: make(map[string]*sql.DB)},
+		"postgres": &Postgres{connections: make(map[string]*sql.DB)},
+		"sqlite":   &SQLite{connections: make(map[string]*sql.DB)},
 	}
 }
 

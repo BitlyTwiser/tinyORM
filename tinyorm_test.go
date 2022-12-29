@@ -29,5 +29,11 @@ func TestInitializeDatabase(t *testing.T) {
 }
 
 func TestDatabaseConnection(t *testing.T) {
-	tinyorm.Connect("development")
+	db, err := tinyorm.Connect("development")
+
+	if err != nil {
+		t.Fatalf("error was had. %v", err.Error())
+	}
+
+	db.Create("")
 }

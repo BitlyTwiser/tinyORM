@@ -32,3 +32,16 @@ production-read-only:
 - Connection without a flag will create a connection to EACH specific connection.
 - if Connect is false, a connection will not be established. If true or missing, a connection will be attempted to the given database. 
 - You can switch to the connection anytime using the <insert stuff> command. 
+- Note: conflicting connection names will not work, only the first connection will be created.
+- i.e.
+```
+development:
+  dialect: postgres
+  etc..
+
+development: 
+  dialct: mysql
+  etc..
+```
+- only the postgres connection will be established, the repated connection will be ignored.
+

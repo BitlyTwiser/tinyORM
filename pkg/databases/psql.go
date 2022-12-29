@@ -2,7 +2,10 @@ package databases
 
 import (
 	"database/sql"
+	"fmt"
 	"sync"
+
+	_ "github.com/lib/pq"
 )
 
 type Postgres struct {
@@ -49,6 +52,6 @@ func (pd *Postgres) SetDB(connInfo map[string]*sql.DB) {
 	pd.connections = connInfo
 }
 
-func (pd *Postgres) QueryString(connInfo DBConfig) string {
-	return ""
+func (pd *Postgres) QueryString(c DBConfig) string {
+	return fmt.Sprintf("host=%s port=%d user=%s password =%s dbname=%s sslmode=%s", c.Host, c.Port, c.User, c.Password, c.Database, "disable")
 }

@@ -1,9 +1,9 @@
 ---
 development:
   dialect: postgres
-  database: keylogger_data
-  user: keylogger_user
-  password: SuperPassword123
+  database: tinyorm
+  user: tiny 
+  password: password123!
   connect: true
   host: 127.0.0.1
   port: 5432
@@ -11,9 +11,9 @@ development:
 
 development-read-only:
   dialect: postgres
-  database: keylogger_data
-  user: keylogger_user
-  password: SuperPassword123
+  database: tinyorm
+  user: tiny
+  password: password123!
   connect: true
   host: 127.0.0.1
   port: 5432
@@ -22,9 +22,9 @@ development-read-only:
 
 development-mysql:
   dialect: mysql 
-  database: keylogger_data
-  user: keylogger_user
-  password: SuperPassword123
+  database: tinyorm
+  user: tiny
+  password: password123!
   connect: false 
   host: 127.0.0.1
   port: 5432

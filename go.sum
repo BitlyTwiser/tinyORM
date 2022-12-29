@@ -1,5 +1,11 @@
 github.com/BitlyTwiser/slogger v1.0.1 h1:zbPRl6Hx/HuPVW7DmRVl0rvU+0oEK+CfO+UsAsa9EVE=
 github.com/BitlyTwiser/slogger v1.0.1/go.mod h1:zyJ8cNey7OLRzjRHuSGH8OLPAXXx7TY9jOSGIFQ3QY8=
+github.com/go-sql-driver/mysql v1.7.0 h1:ueSltNNllEqE3qcWBTD0iQd3IpL/6U+mJxLkazJ7YPc=
+github.com/go-sql-driver/mysql v1.7.0/go.mod h1:OXbVy3sEdcQ2Doequ6Z5BW6fXNQTmx+9S1MCJN5yJMI=
+github.com/lib/pq v1.10.7 h1:p7ZhMD+KsSRozJr34udlUrhboJwWAgCg34+/ZZNvZZw=
+github.com/lib/pq v1.10.7/go.mod h1:AlVN5x4E4T544tWzH6hKfbfQvm3HdbOxrmggDNAPY9o=
+github.com/mattn/go-sqlite3 v1.14.16 h1:yOQRA0RpS5PFz/oikGwBEqvAWhWg5ufRz4ETLjwpU1Y=
+github.com/mattn/go-sqlite3 v1.14.16/go.mod h1:2eHXhiwb8IkHr+BDWZGa96P6+rkvnG63S2DGjv9HUNg=
 golang.org/x/exp v0.0.0-20221227203929-1b447090c38c h1:Govq2W3bnHJimHT2ium65kXcI7ZzTniZHcFATnLJM0Q=
 golang.org/x/exp v0.0.0-20221227203929-1b447090c38c/go.mod h1:CxIveKay+FTh1D0yPZemJVgC/95VzuuOLq5Qi4xnoYc=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405 h1:yhCVgyC4o1eVCa2tZl7eS0r+SDo693bJlVdllGtEeKM=

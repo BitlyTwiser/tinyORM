@@ -12,13 +12,16 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-type DB struct {
-	Conn *sql.DB
-}
+const (
+	FILE_RECUR_DEPTH = 5
+	databaseFileName = "database.yml"
+)
+
+var Connections = make(map[string]databases.DatabaseHandler)
 
 // Initialize database connection via loading the database.yml for the given connection.
 // will set the database handlers to the appropriate *sql.DB
-func InitDatabase(dbConnType string) error {
+func InitDatabaseConnection(dbConnType string) error {
 	var db *sql.DB
 	var handle databases.DatabaseHandler
 	var found bool
@@ -32,32 +35,36 @@ func InitDatabase(dbConnType string) error {
 	connConfig, found := config[dbConnType]
 
 	if !found || connConfig == nil {
-		return logger.Log.LogError("database connectiong not found", fmt.Errorf("database connection %s was not found in database.yml. Please check the file", dbConnType))
+		return fmt.Errorf("database connection %s was not found in database.yml. Please check the file", dbConnType)
 	}
 
 	if handle, found = databases.Databases[connConfig.Dialect]; !found {
-		return logger.Log.LogError("database dialect not not supported", fmt.Errorf("please check provided dialect in database.yml. Provided dialect: %v", connConfig.Dialect))
+		return fmt.Errorf("please check provided dialect in database.yml. Provided dialect: %v", connConfig.Dialect)
 	}
 
 	db, err = sql.Open(connConfig.Dialect, handle.QueryString(*connConfig))
 	if err != nil {
-		return logger.Log.LogError("error connecting", err)
+		return err
 	}
 
 	err = db.Ping()
 	if err != nil {
-		return logger.Log.LogError("error connecting to database", err)
+		return err
 	}
 
+	// May not need this anymore
 	handle.SetDB(map[string]*sql.DB{dbConnType: db})
+
+	Connections[dbConnType] = handle
 
 	return nil
 }
 
 func loadDatabaseConfig(dbConnType string) (map[string]*databases.DBConfig, error) {
-	path, err := filepath.Abs("../../database.yml")
-	if err != nil {
-		return nil, err
+	path := findDatabaseFilePath(databaseFileName, 0)
+
+	if path == "" {
+		return nil, logger.Log.LogError("database file not found", fmt.Errorf("could not find database file within project.. please create the database.yml"))
 	}
 
 	f, err := os.Open(path)
@@ -77,6 +84,20 @@ func loadDatabaseConfig(dbConnType string) (map[string]*databases.DBConfig, erro
 	}
 
 	return config, nil
+}
+
+// Iterates several levels up to attempt to locate database.yml file.
+func findDatabaseFilePath(path string, level int) string {
+	if level == FILE_RECUR_DEPTH {
+		return ""
+	}
+	if _, err := os.Stat(path); err != nil {
+		level++
+
+		return findDatabaseFilePath(filepath.Join("../", path), level)
+	}
+
+	return path
 }
 
 func readDatabaseFile(f io.Reader, config map[string]*databases.DBConfig) error {

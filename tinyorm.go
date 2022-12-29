@@ -9,7 +9,7 @@ import (
 )
 
 // Connect is the primary entrypoint to tinyorm
-// Connect will accapt variadic values of connection strings i.e. development, prod etc..
+// Connect will accept variadic values of connection strings i.e. development, prod etc..
 // Each connection string must match a string present within the database.yml.
 // If a connection fails whilst connecting to any of the given databases, the failure is tracked and reported.
 // If all fail, the application will exit
@@ -19,21 +19,17 @@ func Connect(connection string) (databases.DatabaseHandler, error) {
 		connection = "development"
 	}
 
-	err := connections.InitDatabase("development")
+	err := connections.InitDatabaseConnection(connection)
 
 	if err != nil {
-		logger.Log.LogError("error initalizing database connection", err)
-
-		return nil, err
+		return nil, logger.Log.LogError("error initalizing database connection", err)
 	}
 
-	if db, found := databases.Databases[connection]; found {
-		return db, nil
+	if handle, found := connections.Connections[connection]; found {
+		return handle, nil
 	}
 
-	logger.Log.LogEvent("warn", "no database was found", "connection name", connection)
-
-	return nil, fmt.Errorf("no database was found when connection")
+	return nil, logger.Log.LogError("error connecting to database", fmt.Errorf("no database was found in database.yml"))
 }
 
 // Will connect to and handle multiple concurrent database connections

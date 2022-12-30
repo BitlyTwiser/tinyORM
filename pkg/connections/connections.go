@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/BitlyTwiser/tinyORM/pkg/databases"
+	"github.com/BitlyTwiser/tinyORM/pkg/dialects"
 	"github.com/BitlyTwiser/tinyORM/pkg/logger"
 	"gopkg.in/yaml.v2"
 )
@@ -17,13 +17,13 @@ const (
 	databaseFileName = "database.yml"
 )
 
-var Connections = make(map[string]databases.DatabaseHandler)
+var Connections = make(map[string]dialects.DialectHandler)
 
 // Initialize database connection via loading the database.yml for the given connection.
 // will set the database handlers to the appropriate *sql.DB
 func InitDatabaseConnection(dbConnType string) error {
 	var db *sql.DB
-	var handle databases.DatabaseHandler
+	var handle dialects.DialectHandler
 	var found bool
 
 	config, err := loadDatabaseConfig(dbConnType)
@@ -38,7 +38,7 @@ func InitDatabaseConnection(dbConnType string) error {
 		return fmt.Errorf("database connection %s was not found in database.yml. Please check the file", dbConnType)
 	}
 
-	if handle, found = databases.Databases[connConfig.Dialect]; !found {
+	if handle, found = dialects.Databases[connConfig.Dialect]; !found {
 		return fmt.Errorf("please check provided dialect in database.yml. Provided dialect: %v", connConfig.Dialect)
 	}
 
@@ -52,15 +52,16 @@ func InitDatabaseConnection(dbConnType string) error {
 		return err
 	}
 
-	// May not need this anymore
-	handle.SetDB(map[string]*sql.DB{dbConnType: db})
+	// Set handler data
+	handle.SetDB(db)
 
+	// Store handler in connections in case of switching handlers
 	Connections[dbConnType] = handle
 
 	return nil
 }
 
-func loadDatabaseConfig(dbConnType string) (map[string]*databases.DBConfig, error) {
+func loadDatabaseConfig(dbConnType string) (map[string]*dialects.DBConfig, error) {
 	path := findDatabaseFilePath(databaseFileName, 0)
 
 	if path == "" {
@@ -75,8 +76,7 @@ func loadDatabaseConfig(dbConnType string) (map[string]*databases.DBConfig, erro
 		}
 	}
 
-	// Can be an array of connTypes
-	config := map[string]*databases.DBConfig{dbConnType: new(databases.DBConfig)}
+	config := map[string]*dialects.DBConfig{dbConnType: new(dialects.DBConfig)}
 	err = readDatabaseFile(f, config)
 
 	if err != nil {
@@ -100,7 +100,7 @@ func findDatabaseFilePath(path string, level int) string {
 	return path
 }
 
-func readDatabaseFile(f io.Reader, config map[string]*databases.DBConfig) error {
+func readDatabaseFile(f io.Reader, config map[string]*dialects.DBConfig) error {
 	d, err := io.ReadAll(f)
 
 	if err != nil {

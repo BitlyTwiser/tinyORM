@@ -1,4 +1,4 @@
-package databases
+package dialects
 
 import (
 	"database/sql"
@@ -8,12 +8,11 @@ import (
 )
 
 type Mysql struct {
-	connections map[string]*sql.DB
-	mu          sync.Mutex
-	database    string
+	db *sql.DB
+	mu sync.Mutex
 }
 
-var _ DatabaseHandler = (*Mysql)(nil)
+var _ DialectHandler = (*Mysql)(nil)
 
 func (m *Mysql) Create(model any) error {
 	m.mu.Lock()
@@ -33,27 +32,25 @@ func (m *Mysql) Delete(model any) error {
 	return nil
 }
 
-func (m *Mysql) Find(model any, id string) error {
+func (m *Mysql) Find(model any, args ...any) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	return nil
 }
 
-func (m *Mysql) Where(stmt string, args ...any) error {
+func (m *Mysql) Where(model any, stmt string, limit int, args ...any) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	return nil
 }
 
-func (m *Mysql) Raw(query string) (any, error) {
+func (m *Mysql) Raw(query string, args ...any) (sql.Result, error) {
 	return nil, nil
 }
 
 // Alters the database that queries are for.
-func (m *Mysql) SetDB(connInfo map[string]*sql.DB) {
-	for k, v := range connInfo {
-		m.connections[k] = v
-	}
+func (m *Mysql) SetDB(connDB *sql.DB) {
+	m.db = connDB
 }
 
 func (m *Mysql) QueryString(connInfo DBConfig) string {

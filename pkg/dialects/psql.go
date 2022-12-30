@@ -3,6 +3,7 @@ package dialects
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"sync"
 
@@ -55,9 +56,47 @@ func (pd *Postgres) Delete(model any) error {
 // Will accept arbitrary arguments, though only 1 is used, which should be the ID of the object to find.
 // If an ID is not passed, ALL objects of the model will be returned
 // If an ID IS passed, only a single object should ever be found.
+// If an ID is passed, the the model is converted into a slice of model type
 func (pd *Postgres) Find(model any, args ...any) error {
 	pd.mu.Lock()
 	defer pd.mu.Unlock()
+
+	data := sqlbuilder.QueryBuilder("find", model, "psql")
+
+	if data.Err != nil {
+		return data.Err
+	}
+
+	if len(args) == 0 {
+		rows, err := pd.db.Query(fmt.Sprintf("SELECT * FROM %s", data.TableName), args...)
+
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+
+		// Create new model type
+
+		// For each row, build new struct with the fields
+		// Insert each newfounds truct into an array of the passed model type
+		// This model type should be an array and should be adjused in memory
+		for rows.Next() {
+			// Fill model with things
+			rows.Scan()
+		}
+
+		return nil
+	}
+
+	row := pd.db.QueryRow(fmt.Sprintf("SELECT * FROM %s WHERE id = $1", data.TableName), args[0])
+	if err := row.Scan(data.ModelAttributes()...); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return fmt.Errorf("no rows found for id: %v", args[0])
+		}
+
+		return fmt.Errorf("error scanning rows for id: %v. Error: %v", args[0], err.Error())
+	}
+
 	return nil
 }
 

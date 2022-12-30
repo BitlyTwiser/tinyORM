@@ -3,6 +3,7 @@ package sqlbuilder
 import (
 	"fmt"
 	"reflect"
+	"regexp"
 	"strconv"
 	"strings"
 )
@@ -14,52 +15,84 @@ const (
 	INSERT = "insert"
 	UPDATE = "update"
 	DELETE = "delete"
-	WHERE  = "select"
+	WHERE  = "where"
+	FIND   = "find"
 )
 
-var databaseType string
-
 type Query struct {
-	Err   error
-	Query string
-	Args  []any
+	Err        error
+	Query      string
+	Args       []any
+	TableName  string
+	model      any
+	Attributes []string
 }
 
-// SerializeData will serialize data from any passed in model.
-// The model data will be used within the insert, create, or update methods
-// Does NOT fill the model with any data
-func serializeData(model any) error {
-	t := reflect.TypeOf(model)
-
-	if reflect.ValueOf(model).Kind() != reflect.Ptr {
-		return fmt.Errorf("must pass a pointer to struct %v", t.Name())
+func serializeModelData(model any) *Query {
+	// Enforce usage of pointer, else everything will fail
+	if isPointer(model) {
+		return &Query{Err: fmt.Errorf("pointer not passed. Please pass a pointer to the model")}
 	}
 
-	val := reflect.TypeOf(model).Elem()
-	val.Name()
+	q := &Query{model: model}
+	// Name of the struct itself, which is the DB table name
+	tableName := lowerSnakeCase(reflect.TypeOf(model).Elem().Name())
 
-	sFields := reflect.VisibleFields(t)
+	// Check the pluralization of the tableName. If its not plural, pluralize it by adding s
+	// ToDO: Make this less pathetic
+	if !strings.HasSuffix(tableName, "s") {
+		q.TableName = tableName + "s"
+	}
 
-	for _, field := range sFields {
-		if field.IsExported() {
-			val := field.Tag.Get(field.Name)
-			if val != "" {
-				fmt.Printf("found value: %v", val)
-			}
-			fmt.Printf("field: %v is exported", field)
+	nVal := reflect.ValueOf(model).Elem()
+	// Parse attributes and values from passed in model
+	for i := 0; i < nVal.NumField(); i++ {
+		// If a DB tag is present, take this field instead. Else, parse field from struct attribute
+		if t, ok := nVal.Type().Field(i).Tag.Lookup("db"); ok {
+			q.Attributes = append(q.Attributes, t)
+		} else {
+			q.Attributes = append(q.Attributes, lowerSnakeCase(nVal.Type().Field(i).Name))
 		}
+		q.Args = append(q.Args, nVal.Field(i).Interface())
 	}
 
-	return nil
+	return q
 }
 
-// Will query for data and adjust the model accordingly with the foudn data values.
-// Errors will occur when any inproper models are passed.
-// In theory, if the qwuery successed, this process should work without issue.
-func serializeAndModify(model any, data any) error {
-	// Look at using Elem().Set() to set X to Y value
-	// May work to set values after parsing query row data
-	return nil
+func (q *Query) buildQueryFromModelData(queryType string, databaseType string) Query {
+	var queryString strings.Builder
+
+	if q.Err != nil {
+		return *q
+	}
+
+	switch queryType {
+	case CREATE:
+		queryString.WriteString(INSERT + " INTO " + q.TableName + " " + createTableString(q.Attributes, databaseType))
+	case DELETE:
+		queryString.WriteString(DELETE + " FROM " + q.TableName)
+	case UPDATE:
+		queryString.WriteString(UPDATE + q.TableName + " SET ")
+	}
+
+	q.Query = queryString.String()
+
+	return *q
+}
+
+func (q *Query) ModelAttributes() []any {
+	var pointers []any
+
+	vals := reflect.ValueOf(q.model).Elem()
+	for i := 0; i < vals.NumField(); i++ {
+		pointers = append(pointers, vals.Field(i).Addr().Interface())
+	}
+
+	return pointers
+}
+
+func isPointer(model any) bool {
+	return reflect.ValueOf(model).Kind() != reflect.Ptr
 }
 
 // Generates SQL query from given model.
@@ -68,53 +101,46 @@ func serializeAndModify(model any, data any) error {
 // A table is expected to exist with the given model name.
 // Used for Create, Update, and Delete
 func QueryBuilder(queryType string, model any, databaseType string) Query {
-	var queryString strings.Builder
-	var columnArr []string
-	q := Query{}
+	// Regex the query type to determine which pathway the function call goes
+	re := regexp.MustCompile(fmt.Sprintf(`(?m)(%s|%s|%s)`, CREATE, UPDATE, DELETE))
+	match := re.Match([]byte(queryType))
 
-	// Enforce usage of pointer, else everything will fail
-	if reflect.ValueOf(model).Kind() != reflect.Ptr {
-		return Query{Err: fmt.Errorf("pointer not passed. Please pass a pointer to the model")}
+	if match {
+		return serializeModelData(model).buildQueryFromModelData(queryType, databaseType)
 	}
 
-	// Name of the struct itself, which is the DB table name
-	tableName := lowerSnakeCase(reflect.TypeOf(model).Elem().Name())
+	fwReg := regexp.MustCompile(fmt.Sprintf(`(?m)(%s|%s)`, FIND, WHERE))
+	fwMatch := fwReg.Match([]byte(queryType))
 
-	// Check the pluralization of the tableName. If its not plural, pluralize it by adding s
-	// ToDO: FixThis
-	tableName = tableName + "s"
-
-	nVal := reflect.ValueOf(model).Elem()
-	// Parse attributes and values from passed in model
-	for i := 0; i < nVal.NumField(); i++ {
-		columnArr = append(columnArr, lowerSnakeCase(nVal.Type().Field(i).Name))
-		q.Args = append(q.Args, nVal.Field(i).Interface())
+	if fwMatch {
+		return *serializeModelData(model)
 	}
 
-	switch queryType {
-	case CREATE:
-		queryString.WriteString(INSERT + " INTO " + tableName + " " + createTableString(columnArr, databaseType))
-	case DELETE:
-		queryString.WriteString(DELETE + " FROM " + tableName)
-	case UPDATE:
-		// This could be a problem
-		queryString.WriteString(UPDATE + tableName + " SET ")
-	}
-
-	q.Query = queryString.String()
-
-	return q
+	// Nothing was found matching that string
+	return Query{Err: fmt.Errorf("no matching query builder was found for the string %s", queryType)}
 }
 
-// Maps out builder values pulled from struct pointer and parses data into a string
+// Used for Find & Where queries
+// Will build, query, parse, and load data aggregated from sql call into the respective model
+func QueryAndUpdate(queryType string, model any, stmt string, limit int, args ...any) error {
+	return nil
+}
+
+// Maps out values pulled from struct pointer and parses data into a string
+// The resulting string is the query to set the values for the INSERT query
 func createTableString(columnValues []string, databaseType string) string {
 	var colString strings.Builder
 	var valString strings.Builder
+	var questionVal string
 	colString.WriteString("(")
 	valString.WriteString("(")
 
 	for i, v := range columnValues {
-		questionVal := "$" + strconv.Itoa(i+1)
+		if databaseType == "psql" {
+			questionVal = "$" + strconv.Itoa(i+1)
+		} else {
+			questionVal = "?"
+		}
 		if i != 0 {
 			v = " " + v
 		}
@@ -127,7 +153,6 @@ func createTableString(columnValues []string, databaseType string) string {
 		valString.WriteString(questionVal + ",")
 	}
 
-	// Icing on cake
 	tmp := strings.TrimSuffix(colString.String(), ",")
 	colString.Reset()
 	colString.WriteString(tmp + ")")
@@ -159,7 +184,7 @@ func lowerSnakeCase(val string) string {
 		if isCap(char) {
 			// All runes are 32 bits apart
 			// 32 bit forward run char is lowercase.
-			// Saves on perform string conversion than ToLower
+			// Saves time on having to perform string conversion than ToLower function call.
 			s.WriteRune(char + 32)
 			s.WriteString("_")
 		} else {
@@ -173,10 +198,4 @@ func lowerSnakeCase(val string) string {
 
 func isCap(char rune) bool {
 	return (char >= 65 && char <= 90)
-}
-
-// Used for Find & Update queries
-// Will build, query, parse, and load data aggregated from sql call into the respective model
-func QueryAndUpdate(queryType string, model any, stmt string, limit int, args ...any) error {
-	return nil
 }

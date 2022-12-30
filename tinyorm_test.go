@@ -17,7 +17,7 @@ type User struct {
 	Age      int    `json:"age"`
 }
 
-var Users []User
+type Users []User
 
 type Dog struct {
 	Height int    `json:"height"`
@@ -62,24 +62,33 @@ func TestDatabaseConnection(t *testing.T) {
 		t.Fatalf("error was had. %v", err.Error())
 	}
 
-	u := &User{
-		ID:       0,
-		Name:     "carl",
-		Email:    "stuffthings@gmail.com",
-		Username: "Hi",
-		Password: "asdasd",
-		Age:      111,
-	}
+	// u := &User{
+	// 	ID:       0,
+	// 	Name:     "carl",
+	// 	Email:    "stuffthings@gmail.com",
+	// 	Username: "Hi",
+	// 	Password: "asdasd",
+	// 	Age:      111,
+	// }
 
-	err = db.Create(u)
-	if err != nil {
-		t.Fatalf("error :%v", err.Error())
-	}
+	// err = db.Create(u)
+	// if err != nil {
+	// 	t.Fatalf("error :%v", err.Error())
+	// }
 
 	fUser := new(User)
+	// // With ID
 	err = db.Find(fUser, 0)
 	if err != nil {
 		t.Fatalf("error finding user: %s", err.Error())
 	}
-	fmt.Println(u)
+
+	fmt.Println(fUser)
+	// fUsers := new(Users)
+	// // No id passed, array is expected
+	// err = db.Find(fUsers)
+	// if err != nil {
+	// 	t.Fatalf("error finding users: %s", err.Error())
+	// }
+	// fmt.Println(fUser)
 }

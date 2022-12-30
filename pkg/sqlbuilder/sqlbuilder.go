@@ -3,6 +3,7 @@ package sqlbuilder
 import (
 	"fmt"
 	"reflect"
+	"strconv"
 	"strings"
 )
 
@@ -15,6 +16,8 @@ const (
 	DELETE = "delete"
 	WHERE  = "select"
 )
+
+var databaseType string
 
 type Query struct {
 	Err   error
@@ -64,7 +67,7 @@ func serializeAndModify(model any, data any) error {
 // Name of model is lowercased, then snake cased to adhere to SQL naming conventions.
 // A table is expected to exist with the given model name.
 // Used for Create, Update, and Delete
-func QueryBuilder(queryType string, model any) Query {
+func QueryBuilder(queryType string, model any, databaseType string) Query {
 	var queryString strings.Builder
 	var columnArr []string
 	q := Query{}
@@ -78,6 +81,8 @@ func QueryBuilder(queryType string, model any) Query {
 	tableName := lowerSnakeCase(reflect.TypeOf(model).Elem().Name())
 
 	// Check the pluralization of the tableName. If its not plural, pluralize it by adding s
+	// ToDO: FixThis
+	tableName = tableName + "s"
 
 	nVal := reflect.ValueOf(model).Elem()
 	// Parse attributes and values from passed in model
@@ -88,7 +93,7 @@ func QueryBuilder(queryType string, model any) Query {
 
 	switch queryType {
 	case CREATE:
-		queryString.WriteString(INSERT + " INTO " + tableName + " " + createTableString(columnArr))
+		queryString.WriteString(INSERT + " INTO " + tableName + " " + createTableString(columnArr, databaseType))
 	case DELETE:
 		queryString.WriteString(DELETE + " FROM " + tableName)
 	case UPDATE:
@@ -102,15 +107,24 @@ func QueryBuilder(queryType string, model any) Query {
 }
 
 // Maps out builder values pulled from struct pointer and parses data into a string
-func createTableString(columnValues []string) string {
+func createTableString(columnValues []string, databaseType string) string {
 	var colString strings.Builder
 	var valString strings.Builder
 	colString.WriteString("(")
 	valString.WriteString("(")
 
-	for _, v := range columnValues {
+	for i, v := range columnValues {
+		questionVal := "$" + strconv.Itoa(i+1)
+		if i != 0 {
+			v = " " + v
+		}
 		colString.WriteString(v + ",")
-		valString.WriteString("?" + ",")
+
+		if i != 0 {
+			questionVal = " " + questionVal
+		}
+
+		valString.WriteString(questionVal + ",")
 	}
 
 	// Icing on cake

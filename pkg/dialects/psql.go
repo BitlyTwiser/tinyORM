@@ -12,7 +12,7 @@ import (
 
 type Postgres struct {
 	db *sql.DB
-	mu sync.RWMutex
+	mu sync.Mutex
 }
 
 var _ DialectHandler = (*Postgres)(nil)
@@ -21,7 +21,7 @@ func (pd *Postgres) Create(model any) error {
 	pd.mu.Lock()
 	defer pd.mu.Unlock()
 
-	query := sqlbuilder.QueryBuilder("create", model)
+	query := sqlbuilder.QueryBuilder("create", model, "psql")
 
 	if query.Err != nil {
 		return query.Err

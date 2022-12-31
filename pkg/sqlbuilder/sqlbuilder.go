@@ -34,9 +34,9 @@ func serializeModelData(model any) *Query {
 		return &Query{Err: fmt.Errorf("pointer not passed. Please pass a pointer to the model")}
 	}
 
-	q := &Query{model: model}
 	// Name of the struct itself, which is the DB table name
 	tableName := lowerSnakeCase(reflect.TypeOf(model).Elem().Name())
+	q := &Query{model: model, TableName: tableName}
 
 	// Check the pluralization of the tableName. If its not plural, pluralize it by adding s
 	// ToDO: Make this less pathetic
@@ -44,14 +44,27 @@ func serializeModelData(model any) *Query {
 		q.TableName = tableName + "s"
 	}
 
-	nVal := reflect.ValueOf(model).Elem()
+	nVal := reflect.Indirect(reflect.ValueOf(model))
+
+	if nVal.Kind() == reflect.Slice {
+		// If slice, make higher level call deal with it.
+		// We return the name of the table
+		return q
+		// // Get inner type value
+		// fmt.Println(nVal.Type().Elem())
+		// fmt.Println(nVal.Type().Elem().NumField())
+		// nVal = reflect.Indirect(reflect.ValueOf(nVal.Type().Elem()))
+	}
+
 	// Parse attributes and values from passed in model
 	for i := 0; i < nVal.NumField(); i++ {
+		f := nVal.Type().Field(i)
+
 		// If a DB tag is present, take this field instead. Else, parse field from struct attribute
-		if t, ok := nVal.Type().Field(i).Tag.Lookup("db"); ok {
+		if t, ok := f.Tag.Lookup("db"); ok {
 			q.Attributes = append(q.Attributes, t)
 		} else {
-			q.Attributes = append(q.Attributes, lowerSnakeCase(nVal.Type().Field(i).Name))
+			q.Attributes = append(q.Attributes, lowerSnakeCase(f.Name))
 		}
 		q.Args = append(q.Args, nVal.Field(i).Interface())
 	}
@@ -86,6 +99,17 @@ func (q *Query) ModelAttributes() []any {
 	vals := reflect.ValueOf(q.model).Elem()
 	for i := 0; i < vals.NumField(); i++ {
 		pointers = append(pointers, vals.Field(i).Addr().Interface())
+	}
+
+	return pointers
+}
+
+func PointerAttributes(model reflect.Value) []any {
+	var pointers []any
+
+	model = reflect.Indirect(model)
+	for i := 0; i < model.NumField(); i++ {
+		pointers = append(pointers, model.Field(i).Addr().Interface())
 	}
 
 	return pointers

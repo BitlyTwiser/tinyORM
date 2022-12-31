@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"reflect"
 	"sync"
 
 	"github.com/BitlyTwiser/tinyORM/pkg/sqlbuilder"
@@ -68,21 +69,41 @@ func (pd *Postgres) Find(model any, args ...any) error {
 	}
 
 	if len(args) == 0 {
+		// Make sure its a slice.
+		value := reflect.Indirect(reflect.ValueOf(model))
+
+		if value.Kind() != reflect.Slice {
+			return fmt.Errorf("you must pass an slice of model value when not using an ID")
+		}
+
 		rows, err := pd.db.Query(fmt.Sprintf("SELECT * FROM %s", data.TableName), args...)
 
 		if err != nil {
 			return err
 		}
+
 		defer rows.Close()
 
-		// Create new model type
+		//Make new slice
+		newS := reflect.MakeSlice(reflect.SliceOf(value.Type().Elem()), 0, 0)
 
-		// For each row, build new struct with the fields
-		// Insert each newfounds truct into an array of the passed model type
-		// This model type should be an array and should be adjused in memory
 		for rows.Next() {
-			// Fill model with things
-			rows.Scan()
+			// Create new pointer to inner struct type
+			newVal := reflect.New(value.Type().Elem())
+
+			// Fill model with data after parsing out attributes for struct
+			err := rows.Scan(sqlbuilder.PointerAttributes(newVal)...)
+			if err != nil {
+				return err
+			}
+
+			// Make slice of new val
+			newS = reflect.Append(newS, newVal.Elem())
+		}
+
+		v := reflect.ValueOf(model).Elem()
+		if v.CanSet() {
+			v.Set(newS)
 		}
 
 		return nil

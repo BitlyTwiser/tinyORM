@@ -55,40 +55,68 @@ func TestInitializeDatabase(t *testing.T) {
 	}
 }
 
-func TestDatabaseConnection(t *testing.T) {
+func TestCreateUser(t *testing.T) {
 	db, err := tinyorm.Connect("development")
 
 	if err != nil {
 		t.Fatalf("error was had. %v", err.Error())
 	}
 
-	// u := &User{
-	// 	ID:       0,
-	// 	Name:     "carl",
-	// 	Email:    "stuffthings@gmail.com",
-	// 	Username: "Hi",
-	// 	Password: "asdasd",
-	// 	Age:      111,
-	// }
-
-	// err = db.Create(u)
-	// if err != nil {
-	// 	t.Fatalf("error :%v", err.Error())
-	// }
-
-	fUser := new(User)
-	// // With ID
-	err = db.Find(fUser, 0)
-	if err != nil {
-		t.Fatalf("error finding user: %s", err.Error())
+	u := &User{
+		ID:       0,
+		Name:     "carl",
+		Email:    "stuffthings@gmail.com",
+		Username: "Hi",
+		Password: "asdasd",
+		Age:      111,
 	}
 
-	fmt.Println(fUser)
-	// fUsers := new(Users)
-	// // No id passed, array is expected
-	// err = db.Find(fUsers)
+	err = db.Create(u)
+	if err != nil {
+		t.Fatalf("error :%v", err.Error())
+	}
+
+	u2 := &User{
+		ID:       1,
+		Name:     "yoyo",
+		Email:    "yoyo@gmail.com",
+		Username: "SupDawg",
+		Password: "123123",
+		Age:      2,
+	}
+
+	err = db.Create(u2)
+	if err != nil {
+		t.Fatalf("error :%v", err.Error())
+	}
+}
+
+func TestFindUser(t *testing.T) {
+	db, err := tinyorm.Connect("development")
+
+	if err != nil {
+		t.Fatalf("error was had. %v", err.Error())
+	}
+
+	// fUser := new(User)
+	// // // With ID
+	// err = db.Find(fUser, 0)
 	// if err != nil {
-	// 	t.Fatalf("error finding users: %s", err.Error())
+	// 	t.Fatalf("error finding user: %s", err.Error())
 	// }
+
 	// fmt.Println(fUser)
+
+	fUsers := new(Users)
+	// No id passed, array is expected
+	err = db.Find(fUsers)
+	if err != nil {
+		t.Fatalf("error finding users: %s", err.Error())
+	}
+
+	for _, user := range *fUsers {
+		fmt.Println(user)
+	}
+
+	fmt.Println(fUsers)
 }

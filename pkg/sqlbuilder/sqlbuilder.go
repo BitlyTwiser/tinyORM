@@ -20,12 +20,13 @@ const (
 )
 
 type Query struct {
-	Err        error
-	Query      string
-	Args       []any
-	TableName  string
-	model      any
-	Attributes []string
+	Err              error
+	Query            string
+	Args             []any
+	TableName        string
+	model            any
+	Attributes       []string
+	mappedAttributes map[string]any
 }
 
 func serializeModelData(model any) *Query {
@@ -36,7 +37,11 @@ func serializeModelData(model any) *Query {
 
 	// Name of the struct itself, which is the DB table name
 	tableName := lowerSnakeCase(reflect.TypeOf(model).Elem().Name())
-	q := &Query{model: model, TableName: tableName}
+	q := &Query{
+		model:            model,
+		TableName:        tableName,
+		mappedAttributes: make(map[string]any),
+	}
 
 	// Check the pluralization of the tableName. If its not plural, pluralize it by adding s
 	// ToDO: Make this less pathetic
@@ -46,27 +51,31 @@ func serializeModelData(model any) *Query {
 
 	nVal := reflect.Indirect(reflect.ValueOf(model))
 
+	// If slice, make higher level call deal with it.
 	if nVal.Kind() == reflect.Slice {
-		// If slice, make higher level call deal with it.
 		// We return the name of the table
 		return q
-		// // Get inner type value
-		// fmt.Println(nVal.Type().Elem())
-		// fmt.Println(nVal.Type().Elem().NumField())
-		// nVal = reflect.Indirect(reflect.ValueOf(nVal.Type().Elem()))
 	}
 
 	// Parse attributes and values from passed in model
 	for i := 0; i < nVal.NumField(); i++ {
+		var name string
 		f := nVal.Type().Field(i)
 
 		// If a DB tag is present, take this field instead. Else, parse field from struct attribute
 		if t, ok := f.Tag.Lookup("db"); ok {
+			name = t
 			q.Attributes = append(q.Attributes, t)
 		} else {
-			q.Attributes = append(q.Attributes, lowerSnakeCase(f.Name))
+			lowerSnakeName := lowerSnakeCase(f.Name)
+			name = lowerSnakeName
+			q.Attributes = append(q.Attributes, lowerSnakeName)
 		}
-		q.Args = append(q.Args, nVal.Field(i).Interface())
+
+		value := nVal.Field(i).Interface()
+
+		q.mappedAttributes[name] = value
+		q.Args = append(q.Args, value)
 	}
 
 	return q
@@ -81,9 +90,9 @@ func (q *Query) buildQueryFromModelData(queryType string, databaseType string) Q
 
 	switch queryType {
 	case CREATE:
-		queryString.WriteString(INSERT + " INTO " + q.TableName + " " + createTableString(q.Attributes, databaseType))
+		queryString.WriteString(INSERT + " INTO " + q.TableName + " " + q.createTableString(databaseType))
 	case DELETE:
-		queryString.WriteString(DELETE + " FROM " + q.TableName)
+		queryString.WriteString(DELETE + " FROM " + q.TableName + " " + q.deleteString(databaseType))
 	case UPDATE:
 		queryString.WriteString(UPDATE + q.TableName + " SET ")
 	}
@@ -104,6 +113,8 @@ func (q *Query) ModelAttributes() []any {
 	return pointers
 }
 
+// Reflect the attributes from given reflect.Value and passed back slice of pointers to found attributes
+// Generally to be used for destructuring a reflect.Slice type
 func PointerAttributes(model reflect.Value) []any {
 	var pointers []any
 
@@ -152,18 +163,19 @@ func QueryAndUpdate(queryType string, model any, stmt string, limit int, args ..
 
 // Maps out values pulled from struct pointer and parses data into a string
 // The resulting string is the query to set the values for the INSERT query
-func createTableString(columnValues []string, databaseType string) string {
+func (q *Query) createTableString(databaseType string) string {
 	var colString strings.Builder
 	var valString strings.Builder
-	var questionVal string
+	var valSymbol string
 	colString.WriteString("(")
 	valString.WriteString("(")
 
-	for i, v := range columnValues {
+	for i, v := range q.Attributes {
+		// PSQL uses $ for values
 		if databaseType == "psql" {
-			questionVal = "$" + strconv.Itoa(i+1)
+			valSymbol = "$" + strconv.Itoa(i+1)
 		} else {
-			questionVal = "?"
+			valSymbol = "?"
 		}
 		if i != 0 {
 			v = " " + v
@@ -171,10 +183,10 @@ func createTableString(columnValues []string, databaseType string) string {
 		colString.WriteString(v + ",")
 
 		if i != 0 {
-			questionVal = " " + questionVal
+			valSymbol = " " + valSymbol
 		}
 
-		valString.WriteString(questionVal + ",")
+		valString.WriteString(valSymbol + ",")
 	}
 
 	tmp := strings.TrimSuffix(colString.String(), ",")
@@ -186,6 +198,40 @@ func createTableString(columnValues []string, databaseType string) string {
 	valString.WriteString(tmp + ")")
 
 	return (colString.String() + " VALUES " + valString.String())
+}
+
+func (q *Query) deleteString(databaseType string) string {
+	var s strings.Builder
+	var valSymbol string = "?" // Default to ?
+
+	if databaseType == "psql" {
+		valSymbol = "$" // Set to only first attribute as we are only going after the id
+	}
+
+	// If id is found, write query, remove all attributes for query aside from ID
+	if id, found := q.mappedAttributes["id"]; found {
+		q.Args = []any{id}
+
+		s.WriteString("WHERE id = " + (valSymbol + "1"))
+
+		return s.String()
+	}
+
+	// No ID is present, do any fields have values?
+	// If not, bulk delete from table
+	valSymbol = ""
+	for i, attr := range q.Attributes {
+		iter := strconv.Itoa(i)
+		if i == 0 {
+			s.WriteString(fmt.Sprintf("WHERE %s = %s", attr, (valSymbol + iter)))
+
+			continue
+		}
+
+		s.WriteString(fmt.Sprintf("AND %s = %s", attr, (valSymbol + iter)))
+	}
+
+	return s.String()
 }
 
 // Lowercases and Snakecases the given string as to be used in the SQL query

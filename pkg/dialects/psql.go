@@ -48,9 +48,31 @@ func (pd *Postgres) Update(model any) error {
 	return nil
 }
 
+// No id is present within the model and no args are passed, a batch delete will occur.
+// To delete records with values other than ID, you can insert a model without an ID, but with other fields present.
+// i.e. to delete a user by name: Delete(&User{name: "carl"})
+// Without an ID field, but with name present, only "carl" will be deleted
+// Multiple attributes will be treated as &'s
 func (pd *Postgres) Delete(model any) error {
 	pd.mu.Lock()
 	defer pd.mu.Unlock()
+
+	data := sqlbuilder.QueryBuilder("delete", model, "psql")
+
+	if data.Err != nil {
+		return data.Err
+	}
+
+	result, err := pd.db.Exec(data.Query, data.Args...)
+
+	if err != nil {
+		return fmt.Errorf("error deleting database record. Error: %v", err.Error())
+	}
+
+	if c, err := result.RowsAffected(); err != nil {
+		return fmt.Errorf("error deleting records. Error: %s Rows Affected: %d", err.Error(), c)
+	}
+
 	return nil
 }
 
@@ -84,7 +106,7 @@ func (pd *Postgres) Find(model any, args ...any) error {
 
 		defer rows.Close()
 
-		//Make new slice
+		//Make new slice to feed into the incoming model slice
 		newS := reflect.MakeSlice(reflect.SliceOf(value.Type().Elem()), 0, 0)
 
 		for rows.Next() {
@@ -97,10 +119,11 @@ func (pd *Postgres) Find(model any, args ...any) error {
 				return err
 			}
 
-			// Make slice of new val
+			// Append slice of new val
 			newS = reflect.Append(newS, newVal.Elem())
 		}
 
+		// Check if we can set the model, if we can, insert newslice
 		v := reflect.ValueOf(model).Elem()
 		if v.CanSet() {
 			v.Set(newS)
@@ -109,6 +132,7 @@ func (pd *Postgres) Find(model any, args ...any) error {
 		return nil
 	}
 
+	// If not a slice, the find operation is much more simple. We expect args[0] to be the ID we are looking for.
 	row := pd.db.QueryRow(fmt.Sprintf("SELECT * FROM %s WHERE id = $1", data.TableName), args[0])
 	if err := row.Scan(data.ModelAttributes()...); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {

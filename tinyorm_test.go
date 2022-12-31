@@ -91,6 +91,32 @@ func TestCreateUser(t *testing.T) {
 	}
 }
 
+func TestDeleteUser(t *testing.T) {
+	db, err := tinyorm.Connect("development")
+
+	if err != nil {
+		t.Fatalf("error was had. %v", err.Error())
+	}
+	u := &User{
+		ID:       0,
+		Name:     "carl",
+		Email:    "stuffthings@gmail.com",
+		Username: "Hi",
+		Password: "asdasd",
+		Age:      111,
+	}
+
+	err = db.Delete(u)
+
+	if err != nil {
+		t.Fatalf("error deleting user: %s", err.Error())
+	}
+}
+
+func TestUpdateUser(t *testing.T) {
+
+}
+
 func TestFindUser(t *testing.T) {
 	db, err := tinyorm.Connect("development")
 
@@ -98,14 +124,14 @@ func TestFindUser(t *testing.T) {
 		t.Fatalf("error was had. %v", err.Error())
 	}
 
-	// fUser := new(User)
-	// // // With ID
-	// err = db.Find(fUser, 0)
-	// if err != nil {
-	// 	t.Fatalf("error finding user: %s", err.Error())
-	// }
+	fUser := new(User)
+	// // With ID
+	err = db.Find(fUser, 1)
+	if err != nil {
+		t.Fatalf("error finding user: %s", err.Error())
+	}
 
-	// fmt.Println(fUser)
+	fmt.Println(fUser)
 
 	fUsers := new(Users)
 	// No id passed, array is expected

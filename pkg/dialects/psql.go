@@ -29,7 +29,13 @@ func (pd *Postgres) Create(model any) error {
 		return query.Err
 	}
 
-	result, err := pd.db.Exec(query.Query, query.Args...)
+	stmt, err := pd.db.PrepareContext(context.Background(), query.Query)
+
+	if err != nil {
+		return fmt.Errorf("error creating database record. error: %s", err.Error())
+	}
+
+	result, err := stmt.Exec(query.Args...)
 
 	if err != nil {
 		return fmt.Errorf("error creating database record. Error: %v", err.Error())
@@ -63,7 +69,13 @@ func (pd *Postgres) Delete(model any) error {
 		return data.Err
 	}
 
-	result, err := pd.db.Exec(data.Query, data.Args...)
+	stmt, err := pd.db.PrepareContext(context.Background(), data.Query)
+
+	if err != nil {
+		return err
+	}
+
+	result, err := stmt.Exec(data.Args...)
 
 	if err != nil {
 		return fmt.Errorf("error deleting database record. Error: %v", err.Error())
@@ -90,15 +102,20 @@ func (pd *Postgres) Find(model any, args ...any) error {
 		return data.Err
 	}
 
+	value := reflect.Indirect(reflect.ValueOf(model))
 	if len(args) == 0 {
 		// Make sure its a slice.
-		value := reflect.Indirect(reflect.ValueOf(model))
 
 		if value.Kind() != reflect.Slice {
 			return fmt.Errorf("you must pass an slice of model value when not using an ID")
 		}
+		stmt, err := pd.db.PrepareContext(context.Background(), fmt.Sprintf("SELECT %s FROM %s", sqlbuilder.CoalesceQueryBuilder(value.Type().Elem()), data.TableName))
 
-		rows, err := pd.db.Query(fmt.Sprintf("SELECT * FROM %s", data.TableName), args...)
+		if err != nil {
+			return err
+		}
+
+		rows, err := stmt.Query(args...)
 
 		if err != nil {
 			return err
@@ -133,7 +150,13 @@ func (pd *Postgres) Find(model any, args ...any) error {
 	}
 
 	// If not a slice, the find operation is much more simple. We expect args[0] to be the ID we are looking for.
-	row := pd.db.QueryRow(fmt.Sprintf("SELECT * FROM %s WHERE id = $1", data.TableName), args[0])
+	s := fmt.Sprintf("SELECT %s FROM %s WHERE id = $1", sqlbuilder.CoalesceQueryBuilder(value.Type()), data.TableName)
+	stmt, err := pd.db.PrepareContext(context.Background(), s)
+	if err != nil {
+		return err
+	}
+
+	row := stmt.QueryRow(args[0])
 	if err := row.Scan(data.ModelAttributes()...); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return fmt.Errorf("no rows found for id: %v", args[0])
@@ -161,12 +184,15 @@ func (pd *Postgres) Where(model any, stmt string, limit int, args ...any) error 
 	return nil
 }
 
-// Just straight up performs a raw query. All work is done by the user, this is just an interface for the ExecContext function.
+// Just straight up performs a raw query. All work is done by the user, this is just an interface for the Exec function.
 func (pd *Postgres) Raw(query string, args ...any) (sql.Result, error) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	stmt, err := pd.db.PrepareContext(context.Background(), query)
 
-	result, err := pd.db.ExecContext(ctx, query, args)
+	if err != nil {
+		return nil, err
+	}
+
+	result, err := stmt.Exec(args)
 
 	if err != nil {
 		return nil, err

@@ -1,11 +1,14 @@
 package sqlbuilder
 
 import (
+	"encoding/json"
 	"fmt"
 	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/google/uuid"
 )
 
 // Standard data manupulation operations
@@ -26,7 +29,12 @@ type Query struct {
 	TableName        string
 	model            any
 	Attributes       []string
-	mappedAttributes map[string]any
+	mappedAttributes map[string]attribute
+}
+
+type attribute struct {
+	value any
+	t     reflect.Kind
 }
 
 func serializeModelData(model any) *Query {
@@ -40,7 +48,7 @@ func serializeModelData(model any) *Query {
 	q := &Query{
 		model:            model,
 		TableName:        tableName,
-		mappedAttributes: make(map[string]any),
+		mappedAttributes: make(map[string]attribute),
 	}
 
 	// Check the pluralization of the tableName. If its not plural, pluralize it by adding s
@@ -53,7 +61,6 @@ func serializeModelData(model any) *Query {
 
 	// If slice, make higher level call deal with it.
 	if nVal.Kind() == reflect.Slice {
-		// We return the name of the table
 		return q
 	}
 
@@ -63,19 +70,25 @@ func serializeModelData(model any) *Query {
 		f := nVal.Type().Field(i)
 
 		// If a DB tag is present, take this field instead. Else, parse field from struct attribute
+		// If the models value is nil or empty, the attribute is removed
 		if t, ok := f.Tag.Lookup("db"); ok {
 			name = t
-			q.Attributes = append(q.Attributes, t)
 		} else {
-			lowerSnakeName := lowerSnakeCase(f.Name)
-			name = lowerSnakeName
-			q.Attributes = append(q.Attributes, lowerSnakeName)
+			name = lowerSnakeCase(f.Name)
 		}
 
-		value := nVal.Field(i).Interface()
-
-		q.mappedAttributes[name] = value
-		q.Args = append(q.Args, value)
+		// Not sure if this is a good idea, if we exclued fields like this, could this lead to issues?
+		if value := nVal.Field(i); value.IsValid() && !value.IsZero() {
+			v := value.Interface()
+			// for handling of non primative types (maps/slices)
+			if value.Kind() == reflect.Slice || value.Kind() == reflect.Map {
+				val, _ := json.Marshal(v)
+				v = val
+			}
+			q.mappedAttributes[name] = attribute{value: v, t: value.Kind()}
+			q.Args = append(q.Args, v)
+			q.Attributes = append(q.Attributes, name)
+		}
 	}
 
 	return q
@@ -144,6 +157,7 @@ func QueryBuilder(queryType string, model any, databaseType string) Query {
 		return serializeModelData(model).buildQueryFromModelData(queryType, databaseType)
 	}
 
+	// Find and where are treated differently, just return aggregated data here.
 	fwReg := regexp.MustCompile(fmt.Sprintf(`(?m)(%s|%s)`, FIND, WHERE))
 	fwMatch := fwReg.Match([]byte(queryType))
 
@@ -153,6 +167,64 @@ func QueryBuilder(queryType string, model any, databaseType string) Query {
 
 	// Nothing was found matching that string
 	return Query{Err: fmt.Errorf("no matching query builder was found for the string %s", queryType)}
+}
+
+// CoalesceQueryBuilder will wrap the incoming stmt and query attributes in COALESCE with the default types per each attribute.
+// This will avoid errors when null data is found when using find/where
+// Uses all types and names of attributes from passed in model
+func CoalesceQueryBuilder(model reflect.Type) string {
+	var coalesceQuery strings.Builder
+	coalesceString := " COALESCE"
+
+	// Reflect the pointer out from the slice attributes
+	//innerV := model.Type().Elem()
+	for i := 0; i < model.NumField(); i++ {
+		var name string
+		val := model.Field(i)
+		// If the models value is nil or empty, the attribute is removed
+		if t, ok := val.Tag.Lookup("db"); ok {
+			name = t
+		} else {
+			name = lowerSnakeCase(val.Name)
+		}
+		switch val.Type.Kind() {
+		case reflect.String:
+			coalesceQuery.WriteString(fmt.Sprintf(" %s(%s, %s),", coalesceString, name, "''"))
+		case reflect.Array:
+			// This generally would mean a jsonb array or other
+			if name == "id" {
+				coalesceQuery.WriteString(fmt.Sprintf(" %s(%s, %v),", coalesceString, name, "'00000000-00000000-00000000-00000000'"))
+
+				continue
+			}
+			coalesceQuery.WriteString(fmt.Sprintf(" %s(%s, %v),", coalesceString, name, "'[]'"))
+		case reflect.Map:
+			// jsonb column
+			coalesceQuery.WriteString(fmt.Sprintf(" %s(%s, %v),", coalesceString, name, "'{}'"))
+		case reflect.Int:
+			// This is the default for struct types, so should work here.
+			coalesceQuery.WriteString(fmt.Sprintf(" %s(%s, %d),", coalesceString, name, 0))
+		case reflect.Int8:
+			coalesceQuery.WriteString(fmt.Sprintf(" %s(%s, %d),", coalesceString, name, 0))
+		case reflect.Int16:
+			coalesceQuery.WriteString(fmt.Sprintf(" %s(%s, %d),", coalesceString, name, 0))
+		case reflect.Int32:
+			coalesceQuery.WriteString(fmt.Sprintf(" %s(%s, %d),", coalesceString, name, 0))
+		case reflect.Int64:
+			coalesceQuery.WriteString(fmt.Sprintf(" %s(%s, %d),", coalesceString, name, 0))
+		case reflect.Bool:
+			coalesceQuery.WriteString(fmt.Sprintf(" %s(%s, %v),", coalesceString, name, false))
+		case reflect.Float64:
+			coalesceQuery.WriteString(fmt.Sprintf(" %s(%s, %f),", coalesceString, name, 0.0))
+		case reflect.Float32:
+			coalesceQuery.WriteString(fmt.Sprintf(" %s(%s, %f),", coalesceString, name, 0.0))
+		case reflect.Interface:
+			// Best guess, try string?
+			coalesceQuery.WriteString(fmt.Sprintf(" %s(%s, %v),", coalesceString, name, ""))
+		}
+	}
+
+	return strings.TrimSpace(strings.TrimSuffix(coalesceQuery.String(), ","))
 }
 
 // Used for Find & Where queries
@@ -169,6 +241,14 @@ func (q *Query) createTableString(databaseType string) string {
 	var valSymbol string
 	colString.WriteString("(")
 	valString.WriteString("(")
+
+	// If ID was not passed with model record being created, generate one.
+	if _, found := q.mappedAttributes["id"]; !found {
+		id := uuid.New()
+		q.Attributes = append(q.Attributes, "id")
+		q.Args = append(q.Args, id)
+		q.mappedAttributes["id"] = attribute{value: id, t: reflect.TypeOf(id).Kind()}
+	}
 
 	for i, v := range q.Attributes {
 		// PSQL uses $ for values
@@ -209,8 +289,8 @@ func (q *Query) deleteString(databaseType string) string {
 	}
 
 	// If id is found, write query, remove all attributes for query aside from ID
-	if id, found := q.mappedAttributes["id"]; found {
-		q.Args = []any{id}
+	if a, found := q.mappedAttributes["id"]; found {
+		q.Args = []any{a.value}
 
 		s.WriteString("WHERE id = " + (valSymbol + "1"))
 
@@ -219,16 +299,15 @@ func (q *Query) deleteString(databaseType string) string {
 
 	// No ID is present, do any fields have values?
 	// If not, bulk delete from table
-	valSymbol = ""
 	for i, attr := range q.Attributes {
-		iter := strconv.Itoa(i)
+		iter := strconv.Itoa(i + 1)
 		if i == 0 {
 			s.WriteString(fmt.Sprintf("WHERE %s = %s", attr, (valSymbol + iter)))
 
 			continue
 		}
 
-		s.WriteString(fmt.Sprintf("AND %s = %s", attr, (valSymbol + iter)))
+		s.WriteString(fmt.Sprintf(" AND %s = %s", attr, (valSymbol + iter)))
 	}
 
 	return s.String()

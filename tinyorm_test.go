@@ -5,16 +5,17 @@ import (
 	"testing"
 
 	tinyorm "github.com/BitlyTwiser/tinyORM"
+	"github.com/google/uuid"
 )
 
 // Testing structs acting as database models
 type User struct {
-	ID       int    `json:"id"`
-	Name     string `json:"name"`
-	Email    string `json:"Email"`
-	Username string `json:"username"`
-	Password string `json:"password"`
-	Age      int    `json:"age"`
+	ID       uuid.UUID `json:"id"`
+	Name     string    `json:"name"`
+	Email    string    `json:"email"`
+	Username string    `json:"username,omitempty"`
+	Password string    `json:"password"`
+	Age      int       `json:"age,omitempty"`
 }
 
 type Users []User
@@ -28,7 +29,7 @@ type Dog struct {
 
 type Vehicle struct {
 	Manufacturers []string       `json:"manufacturers"`
-	Data          map[string]any `json:"data"`
+	Data          map[string]int `json:"data"`
 	Color         string         `json:"color"`
 	Recall        bool           `json:"recall"`
 }
@@ -62,13 +63,19 @@ func TestCreateUser(t *testing.T) {
 		t.Fatalf("error was had. %v", err.Error())
 	}
 
+	// u := &User{
+	// 	ID:       uuid.New(),
+	// 	Name:     "carl",
+	// 	Email:    "stuffthings@gmail.com",
+	// 	Username: "Hi",
+	// 	Password: "asdasd",
+	// 	Age:      111,
+	// }
+
 	u := &User{
-		ID:       0,
-		Name:     "carl",
-		Email:    "stuffthings@gmail.com",
-		Username: "Hi",
-		Password: "asdasd",
-		Age:      111,
+		Name:     "yo",
+		Email:    "penis@gmail.com",
+		Password: "asdasdasd",
 	}
 
 	err = db.Create(u)
@@ -76,8 +83,20 @@ func TestCreateUser(t *testing.T) {
 		t.Fatalf("error :%v", err.Error())
 	}
 
+	// v := &Vehicle{
+	// 	Manufacturers: []string{"Ford", "Tesla"},
+	// 	Data:          map[string]int{"asdasd": 10},
+	// 	Color:         "Red",
+	// 	Recall:        false,
+	// }
+
+	// err = db.Create(v)
+	// if err != nil {
+	// 	t.Fatalf("error creating vehicle %s", err.Error())
+	// }
+
 	u2 := &User{
-		ID:       1,
+		ID:       uuid.New(),
 		Name:     "yoyo",
 		Email:    "yoyo@gmail.com",
 		Username: "SupDawg",
@@ -97,20 +116,30 @@ func TestDeleteUser(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error was had. %v", err.Error())
 	}
-	u := &User{
-		ID:       0,
-		Name:     "carl",
-		Email:    "stuffthings@gmail.com",
-		Username: "Hi",
-		Password: "asdasd",
-		Age:      111,
-	}
+	// u := &User{
+	// 	ID:       uuid.MustParse("7feb1891-38f2-45b6-80d7-54e5d0217b78"),
+	// 	Name:     "carl",
+	// 	Email:    "stuffthings@gmail.com",
+	// 	Username: "Hi",
+	// 	Password: "asdasd",
+	// 	Age:      111,
+	// }
+
+	u := &User{}
 
 	err = db.Delete(u)
 
 	if err != nil {
 		t.Fatalf("error deleting user: %s", err.Error())
 	}
+
+	// v := &Vehicle{Color: "Red"}
+
+	// err = db.Delete(v)
+
+	// if err != nil {
+	// 	t.Fatalf("error deleting thing")
+	// }
 }
 
 func TestUpdateUser(t *testing.T) {
@@ -126,7 +155,7 @@ func TestFindUser(t *testing.T) {
 
 	fUser := new(User)
 	// // With ID
-	err = db.Find(fUser, 1)
+	err = db.Find(fUser, uuid.MustParse("418caee0-fce1-431e-a26b-e73b84750f37"))
 	if err != nil {
 		t.Fatalf("error finding user: %s", err.Error())
 	}

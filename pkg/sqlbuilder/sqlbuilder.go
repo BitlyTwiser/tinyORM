@@ -107,7 +107,14 @@ func (q *Query) buildQueryFromModelData(queryType string, databaseType string) Q
 	case DELETE:
 		queryString.WriteString(DELETE + " FROM " + q.TableName + " " + q.deleteString(databaseType))
 	case UPDATE:
-		queryString.WriteString(UPDATE + q.TableName + " SET ")
+		query, err := q.updateString(databaseType)
+
+		if err != nil {
+			q.Err = err
+
+			return *q
+		}
+		queryString.WriteString(UPDATE + " " + q.TableName + " SET " + query)
 	}
 
 	q.Query = queryString.String()
@@ -311,6 +318,40 @@ func (q *Query) deleteString(databaseType string) string {
 	}
 
 	return s.String()
+}
+
+func (q *Query) updateString(databaseType string) (string, error) {
+	var s strings.Builder
+	var valSymbol string = "?"
+
+	if databaseType == "psql" {
+		valSymbol = "$1"
+	}
+
+	if _, found := q.mappedAttributes["id"]; !found {
+		return s.String(), fmt.Errorf("no id was passed, id must be present for update")
+	}
+
+	for k, v := range q.mappedAttributes {
+		if k == "id" {
+			continue
+		}
+		s.WriteString(fmt.Sprintf(" %s = '%v',", k, v.value))
+	}
+
+	tmp := strings.TrimSpace(strings.TrimSuffix(s.String(), ","))
+	s.Reset()
+	s.WriteString(tmp + " " + "WHERE id = " + valSymbol)
+
+	return s.String(), nil
+}
+
+func (q *Query) GetModelID() any {
+	if v, found := q.mappedAttributes["id"]; found {
+		return v.value
+	}
+
+	return nil
 }
 
 // Lowercases and Snakecases the given string as to be used in the SQL query

@@ -29,3 +29,7 @@ development-mysql:
   host: 127.0.0.1
   port: 5432
   name: "devRO" 
+
+development-mysql:
+  dialect: sqlite3
+  path: ./tinyorm.db

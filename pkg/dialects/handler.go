@@ -25,13 +25,14 @@ type DialectHandler interface {
 }
 
 type DBConfig struct {
-	Port     int    `yaml:"port"`
-	Host     string `yaml:"host"`
-	Pool     int    `yaml:"pool"`
-	Connect  bool   `yaml:"connect"`
-	Password string `yaml:"password"`
-	User     string `yaml:"user"`
-	Database string `yaml:"database"`
+	Port     int    `yaml:"port,omitempty"`
+	Host     string `yaml:"host,omitempty"`
+	Pool     int    `yaml:"pool,omitempty"`
+	Connect  bool   `yaml:"connect,omitempty"`
+	Password string `yaml:"password,omitempty"`
+	User     string `yaml:"user,omitempty"`
+	Database string `yaml:"database,omitempty"`
+	Path     string `yaml:"path,omitempty"`
 	Dialect  string `yaml:"dialect"`
 }
 

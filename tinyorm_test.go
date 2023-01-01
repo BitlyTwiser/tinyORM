@@ -143,7 +143,27 @@ func TestDeleteUser(t *testing.T) {
 }
 
 func TestUpdateUser(t *testing.T) {
+	db, err := tinyorm.Connect("development")
 
+	if err != nil {
+		t.Fatalf("error was had. %v", err.Error())
+	}
+
+	u := &User{}
+	err = db.Find(u, "418caee0-fce1-431e-a26b-e73b84750f37")
+
+	if err != nil {
+		t.Fatalf("error finding user. Error %s", err.Error())
+	}
+
+	u.Name = "SomethingElse"
+	u.Age = 42069
+
+	err = db.Update(u)
+
+	if err != nil {
+		t.Errorf("error updating user: %s", err.Error())
+	}
 }
 
 func TestFindUser(t *testing.T) {
@@ -170,7 +190,7 @@ func TestFindUser(t *testing.T) {
 	}
 
 	for _, user := range *fUsers {
-		fmt.Println(user)
+		fmt.Printf("Found user id: %s", user.ID)
 	}
 
 	fmt.Println(fUsers)

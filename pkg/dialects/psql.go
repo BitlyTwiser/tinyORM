@@ -51,6 +51,36 @@ func (pd *Postgres) Create(model any) error {
 func (pd *Postgres) Update(model any) error {
 	pd.mu.Lock()
 	defer pd.mu.Unlock()
+
+	query := sqlbuilder.QueryBuilder("update", model, "psql")
+
+	if query.Err != nil {
+		return query.Err
+	}
+
+	stmt, err := pd.db.PrepareContext(context.Background(), query.Query)
+
+	if err != nil {
+		return err
+	}
+
+	id := query.GetModelID()
+
+	// This should have errored earlier in execution, but just in case
+	if id == nil {
+		return fmt.Errorf("model ID cannot be nil")
+	}
+
+	result, err := stmt.Exec(id)
+
+	if err != nil {
+		return fmt.Errorf("error deleting database record. Error: %v", err.Error())
+	}
+
+	if c, err := result.RowsAffected(); err != nil {
+		return fmt.Errorf("error deleting records. Error: %s Rows Affected: %d", err.Error(), c)
+	}
+
 	return nil
 }
 

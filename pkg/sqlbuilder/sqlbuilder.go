@@ -1,7 +1,6 @@
 package sqlbuilder
 
 import (
-	"encoding/json"
 	"fmt"
 	"reflect"
 	"regexp"
@@ -80,11 +79,6 @@ func serializeModelData(model any) *Query {
 		// Not sure if this is a good idea, if we exclued fields like this, could this lead to issues?
 		if value := nVal.Field(i); value.IsValid() && !value.IsZero() {
 			v := value.Interface()
-			// for handling of non primative types (maps/slices)
-			if value.Kind() == reflect.Slice || value.Kind() == reflect.Map {
-				val, _ := json.Marshal(v)
-				v = val
-			}
 			q.mappedAttributes[name] = attribute{value: v, t: value.Kind()}
 			q.Args = append(q.Args, v)
 			q.Attributes = append(q.Attributes, name)
@@ -204,10 +198,12 @@ func CoalesceQueryBuilder(model reflect.Type) string {
 
 				continue
 			}
-			coalesceQuery.WriteString(fmt.Sprintf(" %s(%s, %v),", coalesceString, name, "'[]'"))
+
+			// 0 sized array
+			coalesceQuery.WriteString(fmt.Sprintf(" %s(%s, '%v'),", coalesceString, name, [0]any{}))
 		case reflect.Map:
 			// jsonb column
-			coalesceQuery.WriteString(fmt.Sprintf(" %s(%s, %v),", coalesceString, name, "'{}'"))
+			coalesceQuery.WriteString(fmt.Sprintf(" %s(%s, '{}'),", coalesceString, name))
 		case reflect.Int:
 			// This is the default for struct types, so should work here.
 			coalesceQuery.WriteString(fmt.Sprintf(" %s(%s, %d),", coalesceString, name, 0))
@@ -228,16 +224,13 @@ func CoalesceQueryBuilder(model reflect.Type) string {
 		case reflect.Interface:
 			// Best guess, try string?
 			coalesceQuery.WriteString(fmt.Sprintf(" %s(%s, %v),", coalesceString, name, ""))
+		case reflect.Slice:
+			// Any slice
+			coalesceQuery.WriteString(fmt.Sprintf(" %s(%s, '%v'),", coalesceString, name, []any{}))
 		}
 	}
 
 	return strings.TrimSpace(strings.TrimSuffix(coalesceQuery.String(), ","))
-}
-
-// Used for Find & Where queries
-// Will build, query, parse, and load data aggregated from sql call into the respective model
-func QueryAndUpdate(queryType string, model any, stmt string, limit int, args ...any) error {
-	return nil
 }
 
 // Maps out values pulled from struct pointer and parses data into a string

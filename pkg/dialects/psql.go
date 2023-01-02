@@ -176,7 +176,8 @@ func (pd *Postgres) Find(model any, args ...any) error {
 			v.Set(newS)
 		}
 
-		return nil
+		// Ensure rows are closed
+		return rows.Close()
 	}
 
 	// If not a slice, the find operation is much more simple. We expect args[0] to be the ID we are looking for.
@@ -205,12 +206,11 @@ func (pd *Postgres) Where(model any, stmt string, limit int, args ...any) error 
 	pd.mu.Lock()
 	defer pd.mu.Unlock()
 
-	err := sqlbuilder.QueryAndUpdate("where", model, stmt, limit, args)
-
-	if err != nil {
-		return err
-	}
-
+	// Strip attributes from model and build coalesce query
+	// stmt and args are passed into coalese query
+	// If limit is > 0, limit is also passed
+	// if model is a slice, return multiple (as with find)
+	// Else we expect to only return the first (pass limit 1 to query, even if limit <= 0)
 	return nil
 }
 

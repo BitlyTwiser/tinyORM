@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	tinyorm "github.com/BitlyTwiser/tinyORM"
+	"github.com/BitlyTwiser/tinyORM/pkg/custom"
 	"github.com/google/uuid"
 )
 
@@ -20,19 +21,15 @@ type User struct {
 
 type Users []User
 
-type Dog struct {
-	Height int    `json:"height"`
-	Weight int    `json:"weight"`
-	Color  string `json:"color"`
-	Name   string `json:"name"`
+type Vehicle struct {
+	ID            uuid.UUID    `json:"id"`
+	Manufacturers custom.Slice `json:"manufacturers"`
+	Data          custom.Map   `json:"data"`
+	Color         string       `json:"color"`
+	Recall        bool         `json:"recall"`
 }
 
-type Vehicle struct {
-	Manufacturers []string       `json:"manufacturers"`
-	Data          map[string]int `json:"data"`
-	Color         string         `json:"color"`
-	Recall        bool           `json:"recall"`
-}
+type Vehicles []Vehicle
 
 func TestInitializeDatabase(t *testing.T) {
 	tests := []struct {
@@ -63,15 +60,6 @@ func TestCreateUser(t *testing.T) {
 		t.Fatalf("error was had. %v", err.Error())
 	}
 
-	// u := &User{
-	// 	ID:       uuid.New(),
-	// 	Name:     "carl",
-	// 	Email:    "stuffthings@gmail.com",
-	// 	Username: "Hi",
-	// 	Password: "asdasd",
-	// 	Age:      111,
-	// }
-
 	u := &User{
 		Name:     "yo",
 		Email:    "penis@gmail.com",
@@ -83,18 +71,6 @@ func TestCreateUser(t *testing.T) {
 		t.Fatalf("error :%v", err.Error())
 	}
 
-	// v := &Vehicle{
-	// 	Manufacturers: []string{"Ford", "Tesla"},
-	// 	Data:          map[string]int{"asdasd": 10},
-	// 	Color:         "Red",
-	// 	Recall:        false,
-	// }
-
-	// err = db.Create(v)
-	// if err != nil {
-	// 	t.Fatalf("error creating vehicle %s", err.Error())
-	// }
-
 	u2 := &User{
 		ID:       uuid.New(),
 		Name:     "yoyo",
@@ -105,6 +81,19 @@ func TestCreateUser(t *testing.T) {
 	}
 
 	err = db.Create(u2)
+	if err != nil {
+		t.Fatalf("error :%v", err.Error())
+	}
+
+	u3 := &User{
+		ID:    uuid.MustParse("4c0ea40b-4aeb-4b67-a407-4da25901ec8d"),
+		Name:  "Carlton",
+		Age:   10000,
+		Email: "SupDawg@gmail.com",
+	}
+
+	err = db.Create(u3)
+
 	if err != nil {
 		t.Fatalf("error :%v", err.Error())
 	}
@@ -133,13 +122,57 @@ func TestDeleteUser(t *testing.T) {
 		t.Fatalf("error deleting user: %s", err.Error())
 	}
 
-	// v := &Vehicle{Color: "Red"}
+}
 
-	// err = db.Delete(v)
+func TestDeleteVehicle(t *testing.T) {
+	db, err := tinyorm.Connect("development")
 
-	// if err != nil {
-	// 	t.Fatalf("error deleting thing")
-	// }
+	if err != nil {
+		t.Fatalf("error was had. %v", err.Error())
+	}
+
+	v := &Vehicle{}
+
+	err = db.Delete(v)
+
+	if err != nil {
+		t.Fatalf("error deleting thing")
+	}
+}
+
+func TestCreateVehicle(t *testing.T) {
+	db, err := tinyorm.Connect("development")
+
+	if err != nil {
+		t.Fatalf("error was had. %v", err.Error())
+	}
+	v := &Vehicle{
+		Manufacturers: custom.Slice{},
+		Data:          make(custom.Map),
+		Color:         "Red",
+		Recall:        false,
+	}
+
+	v.Manufacturers.Append("Carl", "Sagan")
+
+	err = db.Create(v)
+	if err != nil {
+		t.Fatalf("error creating vehicle %s", err.Error())
+	}
+
+	v2 := &Vehicle{
+		Data:   make(custom.Map),
+		Color:  "Blue",
+		Recall: true,
+	}
+
+	v2.Data.Add("SupSup", 123123)
+
+	err = db.Create(v2)
+
+	if err != nil {
+		t.Fatalf("error creating vehicle 2. %v", err.Error())
+	}
 }
 
 func TestUpdateUser(t *testing.T) {
@@ -166,6 +199,34 @@ func TestUpdateUser(t *testing.T) {
 	}
 }
 
+func TestUpdateVehicle(t *testing.T) {
+	db, err := tinyorm.Connect("development")
+
+	if err != nil {
+		t.Fatalf("error was had. %v", err.Error())
+	}
+
+	v := new(Vehicle)
+
+	err = db.Find(v, "36312a82-279c-42db-b791-3e31bd9fd568")
+
+	if err != nil {
+		t.Fatalf("could not find vehicle. Error: %v", err.Error())
+	}
+
+	m := custom.NewMap()
+	m.Add("one", 123123)
+
+	v.Data = m
+	v.Recall = true
+
+	err = db.Update(v)
+
+	if err != nil {
+		t.Fatalf("error updating vehicle with id: %v. Error: %v", v.ID, err.Error())
+	}
+}
+
 func TestFindUser(t *testing.T) {
 	db, err := tinyorm.Connect("development")
 
@@ -175,7 +236,7 @@ func TestFindUser(t *testing.T) {
 
 	fUser := new(User)
 	// // With ID
-	err = db.Find(fUser, uuid.MustParse("418caee0-fce1-431e-a26b-e73b84750f37"))
+	err = db.Find(fUser, uuid.MustParse("4c0ea40b-4aeb-4b67-a407-4da25901ec8d"))
 	if err != nil {
 		t.Fatalf("error finding user: %s", err.Error())
 	}
@@ -194,4 +255,44 @@ func TestFindUser(t *testing.T) {
 	}
 
 	fmt.Println(fUsers)
+}
+
+func TestFindVehicle(t *testing.T) {
+	db, err := tinyorm.Connect("development")
+
+	if err != nil {
+		t.Fatalf("error was had. %v", err.Error())
+	}
+
+	v := new(Vehicle)
+
+	err = db.Find(v, "a4e2c8f8-27c2-48b5-8a93-016c900507ae")
+
+	if err != nil {
+		t.Fatalf("error finding vehicle. Error: %v", err.Error())
+
+	}
+
+	fmt.Println(v)
+
+	v2 := new(Vehicles)
+	err = db.Find(v2)
+
+	if err != nil {
+		t.Fatalf("error finding vehicles. Error: %v", err.Error())
+	}
+
+	fmt.Println(v2)
+}
+
+func TestWhere(t *testing.T) {
+	db, err := tinyorm.Connect("development")
+
+	if err != nil {
+		t.Fatalf("error was had. %v", err.Error())
+	}
+
+	u := &User{}
+
+	db.Where(u, "name ilike ?", 0, "carl")
 }

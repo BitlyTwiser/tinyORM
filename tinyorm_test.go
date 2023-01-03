@@ -295,7 +295,25 @@ func TestWhere(t *testing.T) {
 		t.Fatalf("error was had. %v", err.Error())
 	}
 
-	u := &User{}
+	u := new(User)
 
-	db.Where(u, "name ilike ?", 0, "carl")
+	err = db.Where(u, "name = ?", 0, "yo")
+
+	if err != nil {
+		t.Errorf("error obtaining record. error %v", err.Error())
+	}
+
+	fmt.Println(u)
+
+	u2 := new(Users)
+
+	err = db.Where(u2, "name ILIKE ?", 0, "%yo%")
+
+	if err != nil {
+		t.Errorf("error obtaining record. error %v", err.Error())
+	}
+
+	for _, user := range *u2 {
+		fmt.Println(user)
+	}
 }

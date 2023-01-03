@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"strconv"
+	"strings"
 	"sync"
 
 	"github.com/BitlyTwiser/tinyORM/pkg/sqlbuilder"
@@ -212,12 +214,100 @@ func (pd *Postgres) Find(model any, args ...any) error {
 func (pd *Postgres) Where(model any, stmt string, limit int, args ...any) error {
 	pd.mu.Lock()
 	defer pd.mu.Unlock()
+	var parsedStmt strings.Builder
 
-	// Strip attributes from model and build coalesce query
-	// stmt and args are passed into coalese query
-	// If limit is > 0, limit is also passed
-	// if model is a slice, return multiple (as with find)
-	// Else we expect to only return the first (pass limit 1 to query, even if limit <= 0)
+	if stmt == "" {
+		return fmt.Errorf("The provided statement cannot be empty")
+	}
+
+	if stmt != "" && len(args) == 0 {
+		fmt.Errorf("you must provide attributes to match the provided sql query")
+	}
+
+	data := sqlbuilder.QueryBuilder("where", model, "psql")
+
+	if data.Err != nil {
+		return data.Err
+	}
+
+	i := 1
+	for _, v := range stmt {
+		if v == '?' {
+			parsedStmt.WriteString("$" + strconv.Itoa(i))
+			i++
+			continue
+		}
+
+		parsedStmt.WriteRune(v)
+	}
+
+	value := reflect.Indirect(reflect.ValueOf(model))
+	// If slice we will scan rows and insert data based off of incoming stmt
+	if value.Kind() == reflect.Slice {
+		query := fmt.Sprintf("SELECT %s FROM %s WHERE %s", sqlbuilder.CoalesceQueryBuilder(value.Type().Elem()), data.TableName, parsedStmt.String())
+		if limit > 0 {
+			query = query + fmt.Sprintf(" LIMIT %d", limit)
+		}
+		s, err := pd.db.PrepareContext(context.Background(), query)
+
+		if err != nil {
+			return err
+		}
+
+		rows, err := s.Query(args...)
+
+		if err != nil {
+			return nil
+		}
+
+		defer rows.Close()
+
+		newS := reflect.MakeSlice(reflect.SliceOf(value.Type().Elem()), 0, 0)
+		for rows.Next() {
+			newVal := reflect.New(value.Type().Elem())
+
+			if err := rows.Scan(sqlbuilder.PointerAttributes(newVal)...); err != nil {
+				if errors.Is(err, sql.ErrNoRows) {
+					return fmt.Errorf("there are no rows for for this query")
+				}
+				return err
+			}
+
+			newS = reflect.Append(newS, newVal.Elem())
+		}
+
+		if err := rows.Err(); err != nil {
+			return err
+		}
+
+		// Check if we can set the model, if we can, insert newslice
+		v := reflect.ValueOf(model).Elem()
+		if v.CanSet() {
+			v.Set(newS)
+		}
+
+		return rows.Close()
+	}
+
+	query := fmt.Sprintf("SELECT %s FROM %s WHERE %s", sqlbuilder.CoalesceQueryBuilder(value.Type()), data.TableName, parsedStmt.String())
+	if limit > 0 {
+		query = query + fmt.Sprintf(" LIMIT %d", limit)
+	}
+	s, err := pd.db.PrepareContext(context.Background(), query)
+
+	if err != nil {
+		return err
+	}
+
+	// If not slice, scan row
+	row := s.QueryRow(args...)
+
+	if err := row.Scan(data.ModelAttributes()...); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return fmt.Errorf("no rows found for talbe name %s", data.TableName)
+		}
+	}
+
 	return nil
 }
 

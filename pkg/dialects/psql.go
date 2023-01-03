@@ -71,7 +71,9 @@ func (pd *Postgres) Update(model any) error {
 		return fmt.Errorf("model ID cannot be nil")
 	}
 
-	result, err := stmt.Exec(id)
+	query.Args = append(query.Args[1:], id)
+
+	result, err := stmt.Exec(query.Args...)
 
 	if err != nil {
 		return fmt.Errorf("error deleting database record. Error: %v", err.Error())
@@ -168,6 +170,11 @@ func (pd *Postgres) Find(model any, args ...any) error {
 
 			// Append slice of new val
 			newS = reflect.Append(newS, newVal.Elem())
+		}
+
+		// Ensure rows did not encounter an error when calling Next()
+		if err := rows.Err(); err != nil {
+			return err
 		}
 
 		// Check if we can set the model, if we can, insert newslice

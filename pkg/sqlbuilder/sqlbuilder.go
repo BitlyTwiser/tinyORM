@@ -177,8 +177,6 @@ func CoalesceQueryBuilder(model reflect.Type) string {
 	var coalesceQuery strings.Builder
 	coalesceString := " COALESCE"
 
-	// Reflect the pointer out from the slice attributes
-	//innerV := model.Type().Elem()
 	for i := 0; i < model.NumField(); i++ {
 		var name string
 		val := model.Field(i)
@@ -199,27 +197,15 @@ func CoalesceQueryBuilder(model reflect.Type) string {
 				continue
 			}
 
-			// 0 sized array
 			coalesceQuery.WriteString(fmt.Sprintf(" %s(%s, '%v'),", coalesceString, name, [0]any{}))
 		case reflect.Map:
 			// jsonb column
 			coalesceQuery.WriteString(fmt.Sprintf(" %s(%s, '{}'),", coalesceString, name))
-		case reflect.Int:
-			// This is the default for struct types, so should work here.
-			coalesceQuery.WriteString(fmt.Sprintf(" %s(%s, %d),", coalesceString, name, 0))
-		case reflect.Int8:
-			coalesceQuery.WriteString(fmt.Sprintf(" %s(%s, %d),", coalesceString, name, 0))
-		case reflect.Int16:
-			coalesceQuery.WriteString(fmt.Sprintf(" %s(%s, %d),", coalesceString, name, 0))
-		case reflect.Int32:
-			coalesceQuery.WriteString(fmt.Sprintf(" %s(%s, %d),", coalesceString, name, 0))
-		case reflect.Int64:
+		case reflect.Int8, reflect.Uint16, reflect.Int, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Uint, reflect.Uint32, reflect.Uint64, reflect.Uint8:
 			coalesceQuery.WriteString(fmt.Sprintf(" %s(%s, %d),", coalesceString, name, 0))
 		case reflect.Bool:
 			coalesceQuery.WriteString(fmt.Sprintf(" %s(%s, %v),", coalesceString, name, false))
-		case reflect.Float64:
-			coalesceQuery.WriteString(fmt.Sprintf(" %s(%s, %f),", coalesceString, name, 0.0))
-		case reflect.Float32:
+		case reflect.Float64, reflect.Float32:
 			coalesceQuery.WriteString(fmt.Sprintf(" %s(%s, %f),", coalesceString, name, 0.0))
 		case reflect.Interface:
 			// Best guess, try string?
@@ -316,25 +302,34 @@ func (q *Query) deleteString(databaseType string) string {
 func (q *Query) updateString(databaseType string) (string, error) {
 	var s strings.Builder
 	var valSymbol string = "?"
+	var psql bool
 
 	if databaseType == "psql" {
-		valSymbol = "$1"
+		valSymbol = "$"
+		psql = true
 	}
 
 	if _, found := q.mappedAttributes["id"]; !found {
 		return s.String(), fmt.Errorf("no id was passed, id must be present for update")
 	}
 
-	for k, v := range q.mappedAttributes {
-		if k == "id" {
+	for i, val := range q.Attributes {
+		if val == "id" {
 			continue
 		}
-		s.WriteString(fmt.Sprintf(" %s = '%v',", k, v.value))
+
+		if psql {
+			s.WriteString(fmt.Sprintf(" %s = %v,", val, valSymbol+strconv.Itoa(i)))
+
+			continue
+		}
+
+		s.WriteString(fmt.Sprintf(" %s = %v,", val, valSymbol))
 	}
 
 	tmp := strings.TrimSpace(strings.TrimSuffix(s.String(), ","))
 	s.Reset()
-	s.WriteString(tmp + " " + "WHERE id = " + valSymbol)
+	s.WriteString(tmp + " " + "WHERE id = " + (valSymbol + strconv.Itoa(len(q.Attributes))))
 
 	return s.String(), nil
 }

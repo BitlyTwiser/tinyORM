@@ -183,14 +183,14 @@ func TestUpdateUser(t *testing.T) {
 	}
 
 	u := &User{}
-	err = db.Find(u, "418caee0-fce1-431e-a26b-e73b84750f37")
+	err = db.Find(u, "4c0ea40b-4aeb-4b67-a407-4da25901ec8d")
 
 	if err != nil {
 		t.Fatalf("error finding user. Error %s", err.Error())
 	}
 
-	u.Name = "SomethingElse"
-	u.Age = 42069
+	u.Name = "SupFool"
+	u.Age = 420
 
 	err = db.Update(u)
 
@@ -208,17 +208,20 @@ func TestUpdateVehicle(t *testing.T) {
 
 	v := new(Vehicle)
 
-	err = db.Find(v, "36312a82-279c-42db-b791-3e31bd9fd568")
+	err = db.Find(v, "19d7de46-85de-4043-b0a8-5e93ef823cfd")
 
 	if err != nil {
 		t.Fatalf("could not find vehicle. Error: %v", err.Error())
 	}
 
 	m := custom.NewMap()
-	m.Add("one", 123123)
+	m.Add("Two", "moremoremroemo")
+
+	s := custom.Slice{"one", "two"}
 
 	v.Data = m
 	v.Recall = true
+	v.Manufacturers = s
 
 	err = db.Update(v)
 

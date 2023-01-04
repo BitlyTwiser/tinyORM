@@ -77,47 +77,6 @@ func TestCreateUser(t *testing.T) {
 	}
 }
 
-func TestDeleteUser(t *testing.T) {
-	db, err := tinyorm.Connect("development")
-
-	if err != nil {
-		t.Fatalf("error was had. %v", err.Error())
-	}
-	// u := &User{
-	// 	ID:       uuid.MustParse("7feb1891-38f2-45b6-80d7-54e5d0217b78"),
-	// 	Name:     "carl",
-	// 	Email:    "stuffthings@gmail.com",
-	// 	Username: "Hi",
-	// 	Password: "asdasd",
-	// 	Age:      111,
-	// }
-
-	u := &User{}
-
-	err = db.Delete(u)
-
-	if err != nil {
-		t.Fatalf("error deleting user: %s", err.Error())
-	}
-
-}
-
-func TestDeleteVehicle(t *testing.T) {
-	db, err := tinyorm.Connect("development")
-
-	if err != nil {
-		t.Fatalf("error was had. %v", err.Error())
-	}
-
-	v := &Vehicle{}
-
-	err = db.Delete(v)
-
-	if err != nil {
-		t.Fatalf("error deleting thing")
-	}
-}
-
 func TestCreateVehicle(t *testing.T) {
 	db, err := tinyorm.Connect("development")
 
@@ -125,6 +84,7 @@ func TestCreateVehicle(t *testing.T) {
 		t.Fatalf("error was had. %v", err.Error())
 	}
 	v := &Vehicle{
+		ID:            uuid.MustParse("4c0ea40b-4aeb-4b67-a407-4da25901ec8d"),
 		Manufacturers: custom.Slice{},
 		Data:          make(custom.Map),
 		Color:         "Red",
@@ -186,7 +146,7 @@ func TestUpdateVehicle(t *testing.T) {
 
 	v := new(Vehicle)
 
-	err = db.Find(v, "19d7de46-85de-4043-b0a8-5e93ef823cfd")
+	err = db.Find(v, "4c0ea40b-4aeb-4b67-a407-4da25901ec8d")
 
 	if err != nil {
 		t.Fatalf("could not find vehicle. Error: %v", err.Error())
@@ -273,6 +233,15 @@ func TestFindVehicle(t *testing.T) {
 	}
 
 	t.Logf("found all vehicles. %v", v2)
+
+	v3 := new(Vehicle)
+	err = db.Find(v3, "4c0ea40b-4aeb-4b67-a407-4da25901ec8d")
+
+	if err != nil {
+		t.Fatal("could not find user")
+	}
+
+	t.Log(v3)
 }
 
 func TestWhere(t *testing.T) {
@@ -302,5 +271,45 @@ func TestWhere(t *testing.T) {
 
 	for _, user := range *u2 {
 		fmt.Println(user)
+	}
+}
+func TestDeleteUser(t *testing.T) {
+	db, err := tinyorm.Connect("development")
+
+	if err != nil {
+		t.Fatalf("error was had. %v", err.Error())
+	}
+	// u := &User{
+	// 	ID:       uuid.MustParse("7feb1891-38f2-45b6-80d7-54e5d0217b78"),
+	// 	Name:     "carl",
+	// 	Email:    "stuffthings@gmail.com",
+	// 	Username: "Hi",
+	// 	Password: "asdasd",
+	// 	Age:      111,
+	// }
+
+	u := &User{}
+
+	err = db.Delete(u)
+
+	if err != nil {
+		t.Fatalf("error deleting user: %s", err.Error())
+	}
+
+}
+
+func TestDeleteVehicle(t *testing.T) {
+	db, err := tinyorm.Connect("development")
+
+	if err != nil {
+		t.Fatalf("error was had. %v", err.Error())
+	}
+
+	v := &Vehicle{}
+
+	err = db.Delete(v)
+
+	if err != nil {
+		t.Fatalf("error deleting thing")
 	}
 }

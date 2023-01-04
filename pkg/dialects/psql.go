@@ -124,6 +124,7 @@ func (pd *Postgres) Delete(model any) error {
 
 // Will accept arbitrary arguments, though only 1 is used, which should be the ID of the object to find.
 // If an ID is not passed, ALL objects of the model will be returned
+// If there is no id and the passed model is not a slice, the first row is returned for the given model
 // If an ID IS passed, only a single object should ever be found.
 // If an ID is passed, the the model is converted into a slice of model type
 func (pd *Postgres) Find(model any, args ...any) error {
@@ -136,13 +137,12 @@ func (pd *Postgres) Find(model any, args ...any) error {
 		return data.Err
 	}
 
+	// If value is not slice kind and args == 0
+
 	value := reflect.Indirect(reflect.ValueOf(model))
-	if len(args) == 0 {
+	if len(args) == 0 && value.Kind() == reflect.Slice {
 		// Make sure its a slice.
 
-		if value.Kind() != reflect.Slice {
-			return fmt.Errorf("you must pass an slice of model value when not using an ID")
-		}
 		stmt, err := pd.db.PrepareContext(context.Background(), fmt.Sprintf("SELECT %s FROM %s", sqlbuilder.CoalesceQueryBuilder(value.Type().Elem()), data.TableName))
 
 		if err != nil {
@@ -189,7 +189,29 @@ func (pd *Postgres) Find(model any, args ...any) error {
 		return rows.Close()
 	}
 
-	// If not a slice, the find operation is much more simple. We expect args[0] to be the ID we are looking for.
+	// If no args passed and no sice passed, return first value
+	if len(args) == 0 && value.Kind() != reflect.Slice {
+		s := fmt.Sprintf("SELECT %s FROM %s LIMIT 1", sqlbuilder.CoalesceQueryBuilder(value.Type()), data.TableName)
+		stmt, err := pd.db.PrepareContext(context.Background(), s)
+
+		if err != nil {
+			return err
+		}
+
+		row := stmt.QueryRow()
+
+		if err := row.Scan(data.ModelAttributes()...); err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return fmt.Errorf("no rows found for %s", data.TableName)
+			}
+
+			return fmt.Errorf("error records for table: %s. Error: %v", data.TableName, err.Error())
+		}
+
+		return nil
+	}
+
+	// If not a slice and args are passed, the find operation is much more simple. We expect args[0] to be the ID we are looking for.
 	s := fmt.Sprintf("SELECT %s FROM %s WHERE id = $1", sqlbuilder.CoalesceQueryBuilder(value.Type()), data.TableName)
 	stmt, err := pd.db.PrepareContext(context.Background(), s)
 	if err != nil {
@@ -217,11 +239,11 @@ func (pd *Postgres) Where(model any, stmt string, limit int, args ...any) error 
 	var parsedStmt strings.Builder
 
 	if stmt == "" {
-		return fmt.Errorf("The provided statement cannot be empty")
+		return errors.New("you cannot pass an empty statement")
 	}
 
 	if stmt != "" && len(args) == 0 {
-		fmt.Errorf("you must provide attributes to match the provided sql query")
+		return errors.New("you must provide attributes for the sql query")
 	}
 
 	data := sqlbuilder.QueryBuilder("where", model, "psql")

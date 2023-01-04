@@ -258,6 +258,15 @@ func TestFindUser(t *testing.T) {
 	}
 
 	fmt.Println(fUsers)
+
+	Users2 := new(User)
+	err = db.Find(Users2)
+	if err != nil {
+		t.Fatalf("error finding users: %s", err.Error())
+	}
+
+	fmt.Println(Users2)
+
 }
 
 func TestFindVehicle(t *testing.T) {
@@ -269,14 +278,14 @@ func TestFindVehicle(t *testing.T) {
 
 	v := new(Vehicle)
 
-	err = db.Find(v, "a4e2c8f8-27c2-48b5-8a93-016c900507ae")
+	err = db.Find(v)
 
 	if err != nil {
 		t.Fatalf("error finding vehicle. Error: %v", err.Error())
 
 	}
 
-	fmt.Println(v)
+	t.Logf("Found first vehicle record. %v", v)
 
 	v2 := new(Vehicles)
 	err = db.Find(v2)
@@ -285,7 +294,7 @@ func TestFindVehicle(t *testing.T) {
 		t.Fatalf("error finding vehicles. Error: %v", err.Error())
 	}
 
-	fmt.Println(v2)
+	t.Logf("found all vehicles. %v", v2)
 }
 
 func TestWhere(t *testing.T) {

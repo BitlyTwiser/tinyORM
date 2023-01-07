@@ -27,9 +27,9 @@ development-mysql:
   password: password123!
   connect: false 
   host: 127.0.0.1
-  port: 5432
+  port: 3306
   name: "devRO" 
 
-development-mysql:
+development-sqlite:
   dialect: sqlite3
   path: ./tinyorm.db

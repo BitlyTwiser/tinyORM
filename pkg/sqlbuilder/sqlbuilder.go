@@ -329,8 +329,13 @@ func (q *Query) updateString(databaseType string) (string, error) {
 
 	tmp := strings.TrimSpace(strings.TrimSuffix(s.String(), ","))
 	s.Reset()
-	s.WriteString(tmp + " " + "WHERE id = " + (valSymbol + strconv.Itoa(len(q.Attributes))))
+	if psql {
+		s.WriteString(tmp + " " + "WHERE id = " + (valSymbol + strconv.Itoa(len(q.Attributes))))
 
+		return s.String(), nil
+	}
+
+	s.WriteString(tmp + " " + "WHERE id = " + valSymbol)
 	return s.String(), nil
 }
 

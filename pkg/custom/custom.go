@@ -24,7 +24,14 @@ func (v *Map) Values() Map {
 
 // Scanner/Valuer interface implementation
 func (v *Map) Scan(value interface{}) error {
-	return json.Unmarshal(value.([]byte), &v)
+	switch value := value.(type) {
+	case []byte:
+		return json.Unmarshal(value, &v)
+	case string:
+		return json.Unmarshal([]byte(value), &v)
+	default:
+		return json.Unmarshal(value.([]byte), &v)
+	}
 }
 
 func (v Map) Value() (driver.Value, error) {
@@ -48,7 +55,14 @@ func (s *Slice) Values() Slice {
 
 // Scanner/Valuer interface implementation
 func (s *Slice) Scan(value interface{}) error {
-	return json.Unmarshal(value.([]byte), &s)
+	switch value := value.(type) {
+	case []byte:
+		return json.Unmarshal(value, &s)
+	case string:
+		return json.Unmarshal([]byte(value), &s)
+	default:
+		return json.Unmarshal(value.([]byte), &s)
+	}
 }
 
 func (s Slice) Value() (driver.Value, error) {

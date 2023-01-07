@@ -8,7 +8,7 @@ func init() {
 	Databases = map[string]DialectHandler{
 		"mysql":    &Mysql{},
 		"postgres": &Postgres{},
-		"sqlite":   &SQLite{},
+		"sqlite3":  &SQLite{},
 	}
 }
 
@@ -34,6 +34,7 @@ type DBConfig struct {
 	Database string `yaml:"database,omitempty"`
 	Path     string `yaml:"path,omitempty"`
 	Dialect  string `yaml:"dialect"`
+	Auth     bool   `yaml:"auth"`
 }
 
 type MultiTenantDialectHandler struct {

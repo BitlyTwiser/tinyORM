@@ -32,7 +32,7 @@ type Vehicle struct {
 type Vehicles []Vehicle
 
 // Database from within the database.yml file to test against
-const DATABASE = "development"
+const DATABASE = "development-sqlite"
 
 func TestCreateUser(t *testing.T) {
 	db, err := tinyorm.Connect(DATABASE)
@@ -278,7 +278,6 @@ func TestWhere(t *testing.T) {
 	}
 }
 func TestDeleteUser(t *testing.T) {
-	t.Skip()
 	db, err := tinyorm.Connect(DATABASE)
 
 	if err != nil {

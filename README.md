@@ -45,3 +45,11 @@ development:
 ```
 - only the postgres connection will be established, the repated connection will be ignored.
 
+
+# Notes for MYSQL:
+- AS MYSQL does not have UUID as a type, one must ensure they create their columns, if using UUID's as BINARY(36).
+i.e.
+```
+create table users (id BINARY(36), name text, email text, username text, password text, age int);
+```
+- this will ensure that the UUID can be marshalled correctly.

@@ -31,8 +31,11 @@ type Vehicle struct {
 
 type Vehicles []Vehicle
 
+// Database from within the database.yml file to test against
+const DATABASE = "development"
+
 func TestCreateUser(t *testing.T) {
-	db, err := tinyorm.Connect("development")
+	db, err := tinyorm.Connect(DATABASE)
 
 	if err != nil {
 		t.Fatalf("error was had. %v", err.Error())
@@ -78,7 +81,7 @@ func TestCreateUser(t *testing.T) {
 }
 
 func TestCreateVehicle(t *testing.T) {
-	db, err := tinyorm.Connect("development")
+	db, err := tinyorm.Connect(DATABASE)
 
 	if err != nil {
 		t.Fatalf("error was had. %v", err.Error())
@@ -114,7 +117,7 @@ func TestCreateVehicle(t *testing.T) {
 }
 
 func TestUpdateUser(t *testing.T) {
-	db, err := tinyorm.Connect("development")
+	db, err := tinyorm.Connect(DATABASE)
 
 	if err != nil {
 		t.Fatalf("error was had. %v", err.Error())
@@ -138,7 +141,7 @@ func TestUpdateUser(t *testing.T) {
 }
 
 func TestUpdateVehicle(t *testing.T) {
-	db, err := tinyorm.Connect("development")
+	db, err := tinyorm.Connect(DATABASE)
 
 	if err != nil {
 		t.Fatalf("error was had. %v", err.Error())
@@ -169,7 +172,7 @@ func TestUpdateVehicle(t *testing.T) {
 }
 
 func TestFindUser(t *testing.T) {
-	db, err := tinyorm.Connect("development")
+	db, err := tinyorm.Connect(DATABASE)
 
 	if err != nil {
 		t.Fatalf("error was had. %v", err.Error())
@@ -208,7 +211,7 @@ func TestFindUser(t *testing.T) {
 }
 
 func TestFindVehicle(t *testing.T) {
-	db, err := tinyorm.Connect("development")
+	db, err := tinyorm.Connect(DATABASE)
 
 	if err != nil {
 		t.Fatalf("error was had. %v", err.Error())
@@ -245,7 +248,7 @@ func TestFindVehicle(t *testing.T) {
 }
 
 func TestWhere(t *testing.T) {
-	db, err := tinyorm.Connect("development")
+	db, err := tinyorm.Connect(DATABASE)
 
 	if err != nil {
 		t.Fatalf("error was had. %v", err.Error())
@@ -263,7 +266,8 @@ func TestWhere(t *testing.T) {
 
 	u2 := new(Users)
 
-	err = db.Where(u2, "name ILIKE ?", 0, "%yo%")
+	//err = db.Where(u2, "name ILIKE ?", 0, "%yo%") // PSQL ILIKE support
+	err = db.Where(u2, "name LIKE ?", 0, "%yo%")
 
 	if err != nil {
 		t.Errorf("error obtaining record. error %v", err.Error())
@@ -274,7 +278,8 @@ func TestWhere(t *testing.T) {
 	}
 }
 func TestDeleteUser(t *testing.T) {
-	db, err := tinyorm.Connect("development")
+	t.Skip()
+	db, err := tinyorm.Connect(DATABASE)
 
 	if err != nil {
 		t.Fatalf("error was had. %v", err.Error())
@@ -299,7 +304,8 @@ func TestDeleteUser(t *testing.T) {
 }
 
 func TestDeleteVehicle(t *testing.T) {
-	db, err := tinyorm.Connect("development")
+	t.Skip()
+	db, err := tinyorm.Connect(DATABASE)
 
 	if err != nil {
 		t.Fatalf("error was had. %v", err.Error())

@@ -30,6 +30,15 @@ development-mysql:
   port: 3306
   name: "devRO" 
 
+# Simple test of SQLITE3
 development-sqlite:
   dialect: sqlite3
   path: ./tinyorm.db
+
+#  Test of SQLITE3 with Aut
+development-sqlite-auth:
+  dialect: sqlite3
+  path: ./tinyorm.db
+  auth: true
+  user: tiny
+  password: password123!

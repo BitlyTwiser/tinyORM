@@ -278,7 +278,6 @@ func TestWhere(t *testing.T) {
 	}
 }
 func TestDeleteUser(t *testing.T) {
-	t.Skip()
 	db, err := tinyorm.Connect(DATABASE)
 
 	if err != nil {

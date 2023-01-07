@@ -32,7 +32,7 @@ type Vehicle struct {
 type Vehicles []Vehicle
 
 // Database from within the database.yml file to test against
-const DATABASE = "development-sqlite"
+const DATABASE = "development"
 
 func TestCreateUser(t *testing.T) {
 	db, err := tinyorm.Connect(DATABASE)

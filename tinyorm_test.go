@@ -304,7 +304,6 @@ func TestDeleteUser(t *testing.T) {
 }
 
 func TestDeleteVehicle(t *testing.T) {
-	t.Skip()
 	db, err := tinyorm.Connect(DATABASE)
 
 	if err != nil {

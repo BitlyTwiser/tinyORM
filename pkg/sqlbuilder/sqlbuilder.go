@@ -357,28 +357,37 @@ func (q *Query) GetModelID() any {
 // Keep in mind, non Acii chars (as they can be multiple bytes in length) will not work
 // Additionally, this is not true snake casing. The first char is lowered
 func lowerSnakeCase(val string) string {
+	var prevChar rune
 	var s strings.Builder
 
 	for i, char := range val {
 		// Falls in uppercase range
 		if i == 0 {
+			prevChar = char
+
 			// If caps, lower case
 			if isCap(char) {
 				char = char + 32
 			}
 
 			s.WriteRune(char) // lower case first, but do not append underscore
+
 			continue
 		}
 		if isCap(char) {
 			// All runes are 32 bits apart
 			// 32 bit forward run char is lowercase.
 			// Saves time on having to perform string conversion than ToLower function call.
-			s.WriteRune(char + 32)
+			if isCap(prevChar) {
+				s.WriteRune(char + 32)
+				continue
+			}
 			s.WriteString("_")
+			s.WriteRune(char + 32)
 		} else {
 			s.WriteRune(char)
 		}
+		prevChar = char
 	}
 
 	// Just in case a the last char was snake case

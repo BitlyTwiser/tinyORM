@@ -309,7 +309,7 @@ func Where(db *sql.DB, model any, stmt string, limit int, dialectType string, ar
 
 	if err := row.Scan(data.ModelAttributes()...); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return fmt.Errorf("no rows found for talbe name %s", data.TableName)
+			return fmt.Errorf("no rows found for table name %s", data.TableName)
 		}
 	}
 

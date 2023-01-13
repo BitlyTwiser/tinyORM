@@ -29,6 +29,7 @@ type Query struct {
 	model            any
 	Attributes       []string
 	mappedAttributes map[string]attribute
+	idPresent        bool
 }
 
 type attribute struct {
@@ -74,6 +75,10 @@ func serializeModelData(model any) *Query {
 			name = t
 		} else {
 			name = lowerSnakeCase(f.Name)
+		}
+
+		if name == "id" {
+			q.idPresent = true
 		}
 
 		// Not sure if this is a good idea, if we exclued fields like this, could this lead to issues?
@@ -229,7 +234,8 @@ func (q *Query) createTableString(databaseType string) string {
 	valString.WriteString("(")
 
 	// If ID was not passed with model record being created, generate one.
-	if _, found := q.mappedAttributes["id"]; !found {
+	// This will only execute if the id even exists on the model
+	if _, found := q.mappedAttributes["id"]; !found && q.idPresent {
 		id := uuid.New()
 		q.Attributes = append(q.Attributes, "id")
 		q.Args = append(q.Args, id)

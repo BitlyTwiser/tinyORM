@@ -1,7 +1,54 @@
 # tinyORM
 A tiny ORM for all of your basic data layer needs
 
-## Demands:
+## Premise:
+- TinyORM was crafted with (hopefully) simplicity in mind. Having used many ORM's, the desire was to curate a functinal, yet simple minded ORM that could take care of generic transactions only utilizing the standard library and well known drivers. 
+
+## Usage:
+
+Create:
+Update:
+Find:
+Delete:
+Where:
+
+## Custom Types:
+- Natively, database/sql does not offer support for slices or maps.
+- To accomodate for these datatypes, the ```custom``` pacakge was added.
+- One can create custom types to utilize within their models akin to the ```Vehicle``` struct found in the tests.
+
+Example:
+```
+type Vehicle struct {
+	ID            uuid.UUID    `json:"id"`
+	Manufacturers custom.Slice `json:"manufacturers"`
+	Data          custom.Map   `json:"data"`
+	Color         string       `json:"color"`
+	Recall        bool         `json:"recall"`
+}
+
+// Creating a vehicle using the custom types:
+  v := &Vehicle{
+    ID:            uuid.New(),
+    Manufacturers: custom.Slice{},
+    Data:          make(custom.Map),
+    Color:         "Red",
+    Recall:        false,
+  }
+```
+
+The custom types of customer.Slice{} has a built in ```Append``` method for inserting other types into the slice.
+
+custom.Map also has methods for dealing with the underlying map structure. 
+```
+Add(key string, value any)
+Delete(key strig)
+```
+methods exist on the custom.Map type to insert and delete records.
+
+Both custom.Slice and custom.Map have a ```Values()``` method to return the contents of the data structures.
+
+## Operational Notes:
 - Utilizing a simple database.yml file, one can enter multiple database connetions for the ORM to establish connections to.
 i.e. Development, Production, ReadOnly endpoint, FluentD etc..
 
@@ -31,7 +78,6 @@ production-read-only:
 
 - Connection without a flag will create a connection to EACH specific connection.
 - if Connect is false, a connection will not be established. If true or missing, a connection will be attempted to the given database. 
-- You can switch to the connection anytime using the <insert stuff> command. 
 - Note: conflicting connection names will not work, only the first connection will be created.
 - i.e.
 ```
@@ -44,6 +90,9 @@ development:
   etc..
 ```
 - only the postgres connection will be established, the repated connection will be ignored.
+
+# Package notes:
+- This ORM uses google uuid to generate UUID's for the application, the UUID's may be expected whilst using structs as models
 
 
 # Notes for MYSQL:

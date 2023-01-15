@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/BitlyTwiser/tinyORM/pkg/logger"
 	"github.com/BitlyTwiser/tinyORM/pkg/sqlbuilder"
 )
 
@@ -74,7 +75,8 @@ func Update(db *sql.DB, model any, dialectType string) error {
 	return nil
 }
 
-// No id is present within the model and no args are passed, a batch delete will occur.
+// No id is present within the model and no args are passed, the FIRST recored (using limit 1) from the given model will be deleted
+// To delete results in bulk, pass in a slice. This will batch delete records, use with caution.
 // To delete records with values other than ID, you can insert a model without an ID, but with other fields present.
 // i.e. to delete a user by name: Delete(&User{name: "carl"})
 // Without an ID field, but with name present, only "carl" will be deleted
@@ -86,14 +88,39 @@ func Delete(db *sql.DB, model any, dialectType string) error {
 		return data.Err
 	}
 
-	stmt, err := db.PrepareContext(context.Background(), data.Query)
+	m := reflect.Indirect(reflect.ValueOf(model))
+	if m.Kind() == reflect.Slice {
+		stmt, err := db.PrepareContext(context.Background(), fmt.Sprintf("DELETE FROM %s", data.TableName))
+		if err != nil {
+			return err
+		}
+		result, err := stmt.Exec()
+		if err != nil {
+			return err
+		}
 
+		rowsDeleted, err := result.RowsAffected()
+		if err != nil {
+			return err
+		}
+
+		logger.Log.LogEvent("info", "Deleted rows", "rows deleted", rowsDeleted)
+
+		return nil
+	}
+
+	// Means that no attributes were found on model and model is not a slice.
+	if data.Query == "" {
+		logger.Log.LogEvent("info", "no records were found for the delete query")
+		return nil
+	}
+
+	stmt, err := db.PrepareContext(context.Background(), data.Query)
 	if err != nil {
 		return err
 	}
 
 	result, err := stmt.Exec(data.Args...)
-
 	if err != nil {
 		return fmt.Errorf("error deleting database record. Error: %v", err.Error())
 	}
@@ -316,19 +343,24 @@ func Where(db *sql.DB, model any, stmt string, limit int, dialectType string, ar
 	return nil
 }
 
-// Just straight up performs a raw query. All work is done by the user, this is just an interface for the Exec function.
-func Raw(db *sql.DB, query string, args ...any) (sql.Result, error) {
+// Raw builds a raw query, allowing for a user to either call Exec or All functions to perform execution
+func Raw(db *sql.DB, query string, args ...any) (*RawQuery, error) {
 	stmt, err := db.PrepareContext(context.Background(), query)
 
 	if err != nil {
 		return nil, err
 	}
 
-	result, err := stmt.Exec(args)
-
-	if err != nil {
-		return nil, err
+	if len(args) > 0 {
+		return &RawQuery{
+			stmt:  stmt,
+			query: query,
+			args:  args,
+		}, nil
 	}
 
-	return result, nil
+	return &RawQuery{
+		stmt:  stmt,
+		query: query,
+	}, nil
 }

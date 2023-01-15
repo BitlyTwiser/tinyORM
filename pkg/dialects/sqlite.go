@@ -56,7 +56,7 @@ func (s *SQLite) Where(model any, stmt string, limit int, args ...any) error {
 	return Where(s.db, model, stmt, limit, DIALECT_TYPE_SQLITE, args...)
 }
 
-func (s *SQLite) Raw(query string, args ...any) (sql.Result, error) {
+func (s *SQLite) Raw(query string, args ...any) (*RawQuery, error) {
 	return Raw(s.db, query, args...)
 }
 

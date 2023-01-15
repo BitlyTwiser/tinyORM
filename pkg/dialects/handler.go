@@ -19,7 +19,7 @@ type DialectHandler interface {
 	Delete(model any) error
 	Where(model any, stmt string, limit int, args ...any) error
 	Find(model any, args ...any) error
-	Raw(query string, args ...any) (sql.Result, error)
+	Raw(query string, args ...any) (*RawQuery, error)
 	SetDB(connDB *sql.DB)
 	QueryString(connInfo DBConfig) string
 }

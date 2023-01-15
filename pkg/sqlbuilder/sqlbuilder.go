@@ -291,9 +291,16 @@ func (q *Query) deleteString(databaseType string) string {
 	if a, found := q.mappedAttributes["id"]; found {
 		q.Args = []any{a.value}
 
-		s.WriteString("WHERE id = " + (valSymbol + "1"))
+		if databaseType == "pqsl" {
+			s.WriteString("WHERE id = " + (valSymbol + "1"))
+
+			return s.String()
+		}
+
+		s.WriteString("WHERE id = " + valSymbol)
 
 		return s.String()
+
 	}
 
 	// No ID is present, do any fields have values?

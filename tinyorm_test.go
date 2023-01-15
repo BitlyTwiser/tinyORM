@@ -199,14 +199,13 @@ func TestDeleteData(t *testing.T) {
 		adjustModelFunc func(model any) error // Performs selected operations on model to alter model per test
 		model           any
 	}{
-
-		//"Test Delete User by ID":    {action: "delete", adjustModel: false, model: &User{ID: userID}},
-		//"Test Delete Vehicle by ID": {action: "delete", adjustModel: false, model: &Vehicle{ID: vehicleID}},
+		"Test Delete User by ID":         {action: "delete", adjustModel: false, model: &User{ID: userID}},
+		"Test Delete Vehicle by ID":      {action: "delete", adjustModel: false, model: &Vehicle{ID: vehicleID}},
 		"Test Should not Delete User":    {action: "delete", adjustModel: false, model: new(User)},
 		"Test Should not Delete Vehicle": {action: "delete", adjustModel: false, model: new(Vehicle)},
 		"Test Delete Users":              {action: "delete", adjustModel: false, model: new(Users)},    // Will Delete ALL Users
 		"Test Delete Vehicles":           {action: "delete", adjustModel: false, model: new(Vehicles)}, // Will Delete ALL Vehicles
-		//"Test Delete no ID model":   {action: "delete", adjustModel: false, model: new(TestNoID)},
+		"Test Delete no ID model":        {action: "delete", adjustModel: false, model: new(TestNoID)},
 	}
 
 	for name, test := range deleteTests {

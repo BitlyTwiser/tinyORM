@@ -51,7 +51,7 @@ func (pd *Postgres) Where(model any, stmt string, limit int, args ...any) error 
 	return Where(pd.db, model, stmt, limit, DIALECT_TYPE_PSQL, args...)
 }
 
-func (pd *Postgres) Raw(query string, args ...any) (sql.Result, error) {
+func (pd *Postgres) Raw(query string, args ...any) (*RawQuery, error) {
 	return Raw(pd.db, query, args...)
 }
 

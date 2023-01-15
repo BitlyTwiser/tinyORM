@@ -99,7 +99,11 @@ development:
 - AS MYSQL does not have UUID as a type, one must ensure they create their columns, if using UUID's as BINARY(36).
 i.e.
 ```
+// For users table
 create table users (id BINARY(36), name text, email text, username text, password text, age int);
+
+// For vehicles table 
+create table vehicles (id BINARY(36), manufacturers json, data json, color text, recall bool);
 ```
 - this will ensure that the UUID can be marshalled correctly.
 

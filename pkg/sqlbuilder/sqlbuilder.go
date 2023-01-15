@@ -39,7 +39,7 @@ type attribute struct {
 
 func serializeModelData(model any) *Query {
 	// Enforce usage of pointer, else everything will fail
-	if isPointer(model) {
+	if IsPointer(model) {
 		return &Query{Err: fmt.Errorf("pointer not passed. Please pass a pointer to the model")}
 	}
 
@@ -104,7 +104,9 @@ func (q *Query) buildQueryFromModelData(queryType string, databaseType string) Q
 	case CREATE:
 		queryString.WriteString(INSERT + " INTO " + q.TableName + " " + q.createTableString(databaseType))
 	case DELETE:
-		queryString.WriteString(DELETE + " FROM " + q.TableName + " " + q.deleteString(databaseType))
+		if deleteQuery := q.deleteString(databaseType); deleteQuery != "" {
+			queryString.WriteString(DELETE + " FROM " + q.TableName + " " + deleteQuery)
+		}
 	case UPDATE:
 		query, err := q.updateString(databaseType)
 
@@ -145,7 +147,7 @@ func PointerAttributes(model reflect.Value) []any {
 	return pointers
 }
 
-func isPointer(model any) bool {
+func IsPointer(model any) bool {
 	return reflect.ValueOf(model).Kind() != reflect.Ptr
 }
 
@@ -280,6 +282,11 @@ func (q *Query) deleteString(databaseType string) string {
 		valSymbol = "$" // Set to only first attribute as we are only going after the id
 	}
 
+	// If not attributes, we will just delete the first record.
+	if len(q.Attributes) == 0 && len(q.mappedAttributes) == 0 {
+		return ""
+	}
+
 	// If id is found, write query, remove all attributes for query aside from ID
 	if a, found := q.mappedAttributes["id"]; found {
 		q.Args = []any{a.value}
@@ -290,7 +297,6 @@ func (q *Query) deleteString(databaseType string) string {
 	}
 
 	// No ID is present, do any fields have values?
-	// If not, bulk delete from table
 	for i, attr := range q.Attributes {
 		iter := strconv.Itoa(i + 1)
 		if i == 0 {

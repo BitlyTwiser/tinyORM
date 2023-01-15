@@ -52,7 +52,7 @@ func (m *Mysql) Where(model any, stmt string, limit int, args ...any) error {
 	return Where(m.db, model, stmt, limit, DIALECT_TYPE_MYSQL, args...)
 }
 
-func (m *Mysql) Raw(query string, args ...any) (sql.Result, error) {
+func (m *Mysql) Raw(query string, args ...any) (*RawQuery, error) {
 	return Raw(m.db, query, args...)
 }
 

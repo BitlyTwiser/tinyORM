@@ -163,7 +163,11 @@ func Find(db *sql.DB, model any, dialectType string, args ...any) error {
 			return err
 		}
 
-		defer rows.Close()
+		defer func() {
+			if err := rows.Close(); err != nil {
+				logger.Log.LogError("error closing datase rows in Find call.", err)
+			}
+		}()
 
 		//Make new slice to feed into the incoming model slice
 		newS := reflect.MakeSlice(reflect.SliceOf(value.Type().Elem()), 0, 0)
@@ -292,7 +296,11 @@ func Where(db *sql.DB, model any, stmt string, limit int, dialectType string, ar
 			return nil
 		}
 
-		defer rows.Close()
+		defer func() {
+			if err := rows.Close(); err != nil {
+				logger.Log.LogError("error closing database rows.", err)
+			}
+		}()
 
 		newS := reflect.MakeSlice(reflect.SliceOf(value.Type().Elem()), 0, 0)
 		for rows.Next() {

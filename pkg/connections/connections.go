@@ -15,6 +15,10 @@ import (
 const (
 	FILE_RECUR_DEPTH = 5
 	databaseFileName = "database.yml"
+	maxIdleTime      = "maxIdleTime"
+	maxLifetime      = "maxLifetime"
+	maxIdleConn      = "maxIdleConn"
+	maxOpenConn      = "maxOpenConn"
 )
 
 var Connections = make(map[string]dialects.DialectHandler)
@@ -47,6 +51,9 @@ func InitDatabaseConnection(dbConnType string) error {
 		return err
 	}
 
+	// Set all of the maximums for idle/open connections
+	setConnectionDefaults(db, connConfig)
+
 	err = db.Ping()
 	if err != nil {
 		return err
@@ -59,6 +66,24 @@ func InitDatabaseConnection(dbConnType string) error {
 	Connections[dbConnType] = handle
 
 	return nil
+}
+
+func setConnectionDefaults(db *sql.DB, config *dialects.DBConfig) {
+	if config.MaxIdleConn != 0 {
+		db.SetMaxIdleConns(config.MaxIdleConn)
+	}
+
+	if config.MaxIdleTime != 0 {
+		db.SetConnMaxIdleTime(config.MaxIdleTime)
+	}
+
+	if config.MaxLifetime != 0 {
+		db.SetConnMaxLifetime(config.MaxLifetime)
+	}
+
+	if config.MaxOpenConn != 0 {
+		db.SetMaxOpenConns(config.MaxOpenConn)
+	}
 }
 
 func loadDatabaseConfig(dbConnType string) (map[string]*dialects.DBConfig, error) {

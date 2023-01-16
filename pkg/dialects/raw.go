@@ -55,6 +55,12 @@ func (rq *RawQuery) All(model any) error {
 
 		}
 
+		defer func() {
+			if err := rows.Close(); err != nil {
+				logger.Log.LogError("error closing database rows in All query", err)
+			}
+		}()
+
 		//Make new slice to feed into the incoming model slice
 		newS := reflect.MakeSlice(reflect.SliceOf(m.Type().Elem()), 0, 0)
 

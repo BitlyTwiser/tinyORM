@@ -37,8 +37,7 @@ func Connect(connection string) (dialects.DialectHandler, error) {
 // Will accept variadic set of values each string denoting a database connection within the database.yml file.
 // i.e. Development, Prod, RO etc..
 func MultiConnect(databaseConnections ...string) (dialects.MultiTenantDialectHandler, error) {
-	var handlers []dialects.DialectHandler
-	var returnHandlders dialects.MultiTenantDialectHandler
+	handlers := dialects.MultiTenantDialectHandler{Handlers: make(map[string]dialects.DialectHandler)}
 
 	for _, c := range databaseConnections {
 		err := connections.InitDatabaseConnection(c)
@@ -49,15 +48,13 @@ func MultiConnect(databaseConnections ...string) (dialects.MultiTenantDialectHan
 		}
 
 		if handle, found := connections.Connections[c]; found {
-			handlers = append(handlers, handle)
+			handlers.Set(c, handle)
 		}
 	}
 
-	if len(handlers) == 0 {
-		return returnHandlders, errors.New("no successful connections made to any databases present within the database.yml")
+	if handlers.Empty() {
+		return handlers, errors.New("no successful connections made to any databases present within the database.yml")
 	}
 
-	returnHandlders.Handlers = handlers
-
-	return returnHandlders, nil
+	return handlers, nil
 }

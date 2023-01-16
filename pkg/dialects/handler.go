@@ -38,5 +38,24 @@ type DBConfig struct {
 }
 
 type MultiTenantDialectHandler struct {
-	Handlers []DialectHandler
+	Handlers map[string]DialectHandler
+}
+
+// Append will add database handlers to the Handlers slice
+func (mtd *MultiTenantDialectHandler) Set(key string, handler DialectHandler) {
+	mtd.Handlers[key] = handler
+}
+
+// Empty will determine if there are not database handlers present
+func (mtd MultiTenantDialectHandler) Empty() bool {
+	return len(mtd.Handlers) == 0
+}
+
+// Switch allows the caller to alter to different databases to perform executions again
+func (mtd MultiTenantDialectHandler) SwitchDB(database string) DialectHandler {
+	if db, found := mtd.Handlers[database]; found {
+		return db
+	}
+
+	return nil
 }

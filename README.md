@@ -2,7 +2,7 @@
 A tiny ORM for all of your basic data layer needs
 
 ## Premise:
-- TinyORM was crafted with simplicity in mind. Having used many ORM's, one item that was noticed was the size/complexity of the ORM's. The desire with tinyorm was to curate a functional, yet small, simple ORM that could take care of generic data layer transactions all while only utilizing the standard library and well known drivers. 
+TinyORM is a functional, small, and simple ORM that was created with simplicity as a primary goal and built only utilizing the standard library and well known database drivers. 
 
 ## Usage:
 ### Connecting:

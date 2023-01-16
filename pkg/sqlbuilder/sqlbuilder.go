@@ -291,7 +291,7 @@ func (q *Query) deleteString(databaseType string) string {
 	if a, found := q.mappedAttributes["id"]; found {
 		q.Args = []any{a.value}
 
-		if databaseType == "pqsl" {
+		if databaseType == "psql" {
 			s.WriteString("WHERE id = " + (valSymbol + "1"))
 
 			return s.String()

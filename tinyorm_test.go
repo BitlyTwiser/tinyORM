@@ -38,7 +38,7 @@ type TestNoID struct {
 }
 
 // Database from within the database.yml file to test against
-const DATABASE = "development-mysql"
+const DATABASE = "development"
 
 var (
 	userID    = uuid.MustParse("4c0ea40b-4aeb-4b67-a407-4da25901ec8d")
@@ -112,8 +112,8 @@ func TestORMFunctionality(t *testing.T) {
 		"Test Where Vehicle using LIKE":  {action: "where", adjustModel: false, model: new(Vehicles), limit: 2, stmt: "color LIKE ?", args: "%red%"},
 		"Test Raw Query":                 {action: "raw-all", adjustModel: false, model: new(Vehicles), stmt: fmt.Sprintf("SELECT %s FROM vehicles", vehicleCoalesceQuery()), sliceArgs: []any{}},
 		"Test Raw Query Singular":        {action: "raw-all", adjustModel: false, model: new(Vehicle), stmt: fmt.Sprintf("SELECT %s FROM vehicles LIMIT 1", vehicleCoalesceQuery()), sliceArgs: []any{}},
-		//"Test Raw Exec PSQL":               {action: "raw-exec", adjustModel: false, model: new(Vehicles), stmt: "insert into test_no_ids VALUES($1, $2)", sliceArgs: []any{"Things", "TestTest"}}, // Run this test for PSQL
-		"Test Raw Exec Mysql/Sqlite":       {action: "raw-exec", adjustModel: false, model: new(Vehicles), stmt: "insert into test_no_ids VALUES(?, ?)", sliceArgs: []any{"Things", "TestTest"}}, // Run this test for Mysql
+		"Test Raw Exec PSQL":             {action: "raw-exec", adjustModel: false, model: new(Vehicles), stmt: "insert into test_no_ids VALUES($1, $2)", sliceArgs: []any{"Things", "TestTest"}}, // Run this test for PSQL
+		//"Test Raw Exec Mysql/Sqlite":       {action: "raw-exec", adjustModel: false, model: new(Vehicles), stmt: "insert into test_no_ids VALUES(?, ?)", sliceArgs: []any{"Things", "TestTest"}}, // Run this test for Mysql
 		"Test Create model that has no id": {action: "create", adjustModel: false, model: createNodIdModel()},
 	}
 
@@ -199,13 +199,16 @@ func TestDeleteData(t *testing.T) {
 		adjustModelFunc func(model any) error // Performs selected operations on model to alter model per test
 		model           any
 	}{
-		"Test Delete User by ID":         {action: "delete", adjustModel: false, model: &User{ID: userID}},
-		"Test Delete Vehicle by ID":      {action: "delete", adjustModel: false, model: &Vehicle{ID: vehicleID}},
-		"Test Should not Delete User":    {action: "delete", adjustModel: false, model: new(User)},
-		"Test Should not Delete Vehicle": {action: "delete", adjustModel: false, model: new(Vehicle)},
-		"Test Delete Users":              {action: "delete", adjustModel: false, model: new(Users)},    // Will Delete ALL Users
-		"Test Delete Vehicles":           {action: "delete", adjustModel: false, model: new(Vehicles)}, // Will Delete ALL Vehicles
-		"Test Delete no ID model":        {action: "delete", adjustModel: false, model: new(TestNoID)},
+		"Test Delete User by ID":                    {action: "delete", adjustModel: false, model: &User{ID: userID}},
+		"Test Delete Vehicle by ID":                 {action: "delete", adjustModel: false, model: &Vehicle{ID: vehicleID}},
+		"Test Delete TestWithNoIds with attributes": {action: "delete", adjustModel: false, model: &TestNoID{Stuff: "Things"}},
+		"Test Delete User using attributes":         {action: "delete", adjustModel: false, model: &User{Name: "TestCreate"}},
+		"Test Delete Vehicle using attributes":      {action: "delete", adjustModel: false, model: &Vehicle{Color: "Blue"}},
+		"Test Should not Delete User":               {action: "delete", adjustModel: false, model: new(User)},
+		"Test Should not Delete Vehicle":            {action: "delete", adjustModel: false, model: new(Vehicle)},
+		"Test Delete Users":                         {action: "delete", adjustModel: false, model: new(Users)},    // Will Delete ALL Users
+		"Test Delete Vehicles":                      {action: "delete", adjustModel: false, model: new(Vehicles)}, // Will Delete ALL Vehicles
+		"Test Delete no ID model":                   {action: "delete", adjustModel: false, model: new(TestNoID)},
 	}
 
 	for name, test := range deleteTests {

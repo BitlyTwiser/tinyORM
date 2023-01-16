@@ -1,6 +1,9 @@
 package dialects
 
-import "database/sql"
+import (
+	"database/sql"
+	"time"
+)
 
 var Databases map[string]DialectHandler
 
@@ -25,16 +28,20 @@ type DialectHandler interface {
 }
 
 type DBConfig struct {
-	Port     int    `yaml:"port,omitempty"`
-	Host     string `yaml:"host,omitempty"`
-	Pool     int    `yaml:"pool,omitempty"`
-	Connect  bool   `yaml:"connect,omitempty"`
-	Password string `yaml:"password,omitempty"`
-	User     string `yaml:"user,omitempty"`
-	Database string `yaml:"database,omitempty"`
-	Path     string `yaml:"path,omitempty"`
-	Dialect  string `yaml:"dialect"`
-	Auth     bool   `yaml:"auth"`
+	Port        int           `yaml:"port,omitempty"`
+	Host        string        `yaml:"host,omitempty"`
+	Pool        int           `yaml:"pool,omitempty"`
+	Connect     bool          `yaml:"connect,omitempty"`
+	Password    string        `yaml:"password,omitempty"`
+	User        string        `yaml:"user,omitempty"`
+	Database    string        `yaml:"database,omitempty"`
+	Path        string        `yaml:"path,omitempty"`
+	Dialect     string        `yaml:"dialect"`
+	Auth        bool          `yaml:"auth"`
+	MaxIdleTime time.Duration `yaml:"maxIdleTime,omitempty"`
+	MaxLifetime time.Duration `yaml:"maxLifetime,omitempty"`
+	MaxIdleConn int           `yaml:"maxIdleConn,omitempty"`
+	MaxOpenConn int           `yaml:"maxOpenConn,omitempty"`
 }
 
 type MultiTenantDialectHandler struct {

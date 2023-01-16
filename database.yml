@@ -8,6 +8,10 @@ development:
   host: 127.0.0.1
   port: 5432
   name: "development"
+  maxIdleTime: 60 # setting connection values 
+  maxLifetime: 100
+  maxIdleConn: 0
+  maxOpenConn: 10
 
 development-read-only:
   dialect: postgres

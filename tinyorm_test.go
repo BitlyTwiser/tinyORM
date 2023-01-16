@@ -37,6 +37,8 @@ type TestNoID struct {
 	Data  string `json:"data"`
 }
 
+type TestNoIDs []TestNoID
+
 // Database from within the database.yml file to test against
 const DATABASE = "development"
 
@@ -62,8 +64,8 @@ func TestCreate(t *testing.T) {
 		adjustModelFunc func(model any) error // Performs selected operations on model to alter model per test
 		model           any
 	}{
-		"Test Create User 3 with sepcific ID and without selected fields": {action: "create", adjustModel: false, model: createUserModel(true, userID)},
-		"Test Create Vehicle with specific ID without selected fields":    {action: "create", adjustModel: false, model: createVehicleModel(true, vehicleID)},
+		"Test Create User with sepcific ID and without selected fields": {action: "create", adjustModel: false, model: createUserModel(true, userID)},
+		"Test Create Vehicle with specific ID without selected fields":  {action: "create", adjustModel: false, model: createVehicleModel(true, vehicleID)},
 	}
 
 	for name, test := range createTests {
@@ -106,15 +108,15 @@ func TestORMFunctionality(t *testing.T) {
 		"Test Find Vehicle with ID":      {action: "find", adjustModel: false, model: new(Vehicle), args: vehicleID},
 		"Test Find All Vehicles":         {action: "find", adjustModel: false, model: new(Vehicles)}, // Note the pluralization
 		"Test Find Vehicle without ID":   {action: "find", adjustModel: false, model: new(Vehicle)},  // i.e. First functionality
-		"Test Where User":                {action: "where", adjustModel: false, model: new(User), limit: 0, stmt: "name = ?", args: "TestCreate"},
-		"Test Where User using LIKE":     {action: "where", adjustModel: false, model: new(Users), limit: 2, stmt: "name LIKE ?", args: "%TestCreate%"},
-		"Test Where Vehicle":             {action: "where", adjustModel: false, model: new(Vehicle), limit: 0, stmt: "color = ?", args: "Blue"},
-		"Test Where Vehicle using LIKE":  {action: "where", adjustModel: false, model: new(Vehicles), limit: 2, stmt: "color LIKE ?", args: "%red%"},
 		"Test Raw Query":                 {action: "raw-all", adjustModel: false, model: new(Vehicles), stmt: fmt.Sprintf("SELECT %s FROM vehicles", vehicleCoalesceQuery()), sliceArgs: []any{}},
 		"Test Raw Query Singular":        {action: "raw-all", adjustModel: false, model: new(Vehicle), stmt: fmt.Sprintf("SELECT %s FROM vehicles LIMIT 1", vehicleCoalesceQuery()), sliceArgs: []any{}},
 		"Test Raw Exec PSQL":             {action: "raw-exec", adjustModel: false, model: new(Vehicles), stmt: "insert into test_no_ids VALUES($1, $2)", sliceArgs: []any{"Things", "TestTest"}}, // Run this test for PSQL
 		//"Test Raw Exec Mysql/Sqlite":       {action: "raw-exec", adjustModel: false, model: new(Vehicles), stmt: "insert into test_no_ids VALUES(?, ?)", sliceArgs: []any{"Things", "TestTest"}}, // Run this test for Mysql
 		"Test Create model that has no id": {action: "create", adjustModel: false, model: createNodIdModel()},
+		"Test Where User":                  {action: "where", adjustModel: false, model: new(User), limit: 0, stmt: "name = ?", args: "TestCreate"},
+		"Test Where User using LIKE":       {action: "where", adjustModel: false, model: new(Users), limit: 2, stmt: "name LIKE ?", args: "%TestCreate%"},
+		"Test Where Vehicle":               {action: "where", adjustModel: false, model: new(Vehicle), limit: 0, stmt: "color = ?", args: "Blue"},
+		"Test Where Vehicle using LIKE":    {action: "where", adjustModel: false, model: new(Vehicles), limit: 2, stmt: "color LIKE ?", args: "%red%"},
 	}
 
 	for name, test := range tests {
@@ -208,7 +210,7 @@ func TestDeleteData(t *testing.T) {
 		"Test Should not Delete Vehicle":            {action: "delete", adjustModel: false, model: new(Vehicle)},
 		"Test Delete Users":                         {action: "delete", adjustModel: false, model: new(Users)},    // Will Delete ALL Users
 		"Test Delete Vehicles":                      {action: "delete", adjustModel: false, model: new(Vehicles)}, // Will Delete ALL Vehicles
-		"Test Delete no ID model":                   {action: "delete", adjustModel: false, model: new(TestNoID)},
+		"Test Delete no ID model":                   {action: "delete", adjustModel: false, model: new(TestNoIDs)},
 	}
 
 	for name, test := range deleteTests {
@@ -296,9 +298,11 @@ func UpdateUser(model any) error {
 	if u, ok := model.(*User); ok {
 		u.Name = "TestUpdate"
 		u.Age = 9999
+	} else {
+		return fmt.Errorf("Error reflecting user pointer in UpdateUser test")
 	}
 
-	return fmt.Errorf("Error reflecting user pointer in UpdateUser test")
+	return nil
 }
 
 func UpdateVehicle(model any) error {
@@ -311,7 +315,9 @@ func UpdateVehicle(model any) error {
 		v.Data = m
 		v.Recall = true
 		v.Manufacturers = s
+	} else {
+		return fmt.Errorf("Error reflecting value of vehicle model in UpdateVehicle")
 	}
 
-	return fmt.Errorf("Error reflecting value of vehicle model in UpdateVehicle")
+	return nil
 }

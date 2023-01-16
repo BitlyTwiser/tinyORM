@@ -57,7 +57,7 @@ func Update(db *sql.DB, model any, dialectType string) error {
 
 	// This should have errored earlier in execution, but just in case
 	if id == nil {
-		return fmt.Errorf("model ID cannot be nil")
+		return fmt.Errorf("model ID cannot be nil when calling update. Attempt to use a Raw query to update this model")
 	}
 
 	query.Args = append(query.Args[1:], id)
@@ -146,7 +146,6 @@ func Find(db *sql.DB, model any, dialectType string, args ...any) error {
 	}
 
 	// If value is not slice kind and args == 0
-
 	value := reflect.Indirect(reflect.ValueOf(model))
 	if len(args) == 0 && value.Kind() == reflect.Slice {
 		// Make sure its a slice.
@@ -201,7 +200,7 @@ func Find(db *sql.DB, model any, dialectType string, args ...any) error {
 		return rows.Close()
 	}
 
-	// If no args passed and no sice passed, return first value
+	// If no args passed and no slice passed, return first value
 	if len(args) == 0 && value.Kind() != reflect.Slice {
 		s := fmt.Sprintf("SELECT %s FROM %s LIMIT 1", sqlbuilder.CoalesceQueryBuilder(value.Type()), data.TableName)
 		stmt, err := db.PrepareContext(context.Background(), s)

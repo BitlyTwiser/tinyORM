@@ -2,7 +2,8 @@
 A tiny ORM for all of your basic data layer needs
 
 ## Premise:
-- TinyORM was crafted with simplicity in mind. Having used many ORM's, one item that always perturbed me was the size/complexity of the ORM's. The desire with tinyorm was to curate a functional, yet small, simple ORM that could take care of generic data layer transactions all while only utilizing the standard library and well known drivers. 
+- TinyORM was crafted with simplicity in mind. Having used many ORM's, one item that was noticed was the size/complexity of the ORM's. The desire with tinyorm was to curate a functional, yet small, simple ORM that could take care of generic data layer transactions all while only utilizing the standard library and well known drivers. 
+
 ## Usage:
 ### Connecting:
 To initiall perform the database connection, the following line can be used:
@@ -242,6 +243,23 @@ The ```stmt``` is the query, followed by arguments to supplament the query with 
 i.e. ```stmt := "select * from foo"```
 Examples of functionality are within the tinyorm_test.go.
 
+Raw:
+- Raw is really just that, a rather raw implementation giving most full control over to the user. No nil value safeguards are in place nor vetting of queries/attributes.
+- When calling raw, you will have the pointer receiver methods available to you: ```All``` and ```Exec```. The rather common nomenclature for ORM's.
+- ```All``` expects a model (or slice of models) and will insert the data into said model. Note: Model MUST be a pointer.
+- ```Exec``` will simply execute a given query and that is all. 
+- A snipper of raw functionality can be seen here:
+```
+				if q, err := db.Raw(test.stmt, test.sliceArgs...); err == nil {
+					if err := q.Exec(); err != nil {
+						t.Fatalf("error executing raw query. %s", err.Error())
+					}
+				}
+```
+The ```stmt``` is the query, followed by arguments to supplament the query with data as needed.
+i.e. ```stmt := "select * from foo"```
+Examples of functionality are within the tinyorm_test.go
+
 ## Custom Types:
 - Natively, database/sql does not offer support for slices or maps.
 - To accommodate for these datatypes, the ```custom``` package was added.
@@ -281,6 +299,7 @@ v := &Vehicle{
 v.Manufacturers = custom.Slice{"Ford", "Tesla", "Mercedes"}
 
 return v
+
 ```
 
 custom.Map also has methods for dealing with the underlying map structure. 
@@ -298,11 +317,11 @@ v := &Vehicle{
 v.Data.Add("Hello Testing", 123123)
 
 return v
+
 ```
 methods exist on the custom.Map type to insert and delete records.
 
 Both custom.Slice and custom.Map have a ```Values()``` method to return the contents of the data structures.
-
 
 ## Null values:
 - The ```database/sql``` pacakge does not handle nil values in the Scan functionality. The ```Custom``` package does supply the user with the ability to utilize slices and maps, the primary code wraps all queryes for model attributes into a COALESCE statement.
@@ -375,6 +394,74 @@ SetMaxIdleConns
 SetMaxOpenConns
 ```
 These can be set wtihin the database.yml file per connnection. If left blank, database/sql defaults will be used.
+Example:
+```
+development:
+  dialect: postgres
+  database: tinyorm
+  user: tiny 
+  password: password123!
+  connect: true
+  host: 127.0.0.1
+  port: 5432
+  name: "development"
+  maxIdleTime: 60
+  maxLifetime: 100
+  maxIdleConn: 0
+  maxOpenConn: 10
+```
+## Multi-Tenant connections:
+- tinyORM has the ability to connect and keep-alive multiple connections to different databases.
+- Utilizing the multi-connect utility, you can connect to multiple databases and switch between them easily.
+
+Example:
+```
+	mtc, err := tinyorm.MultiConnect(databaseConnections...)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := mtc.SwitchDB("development").Create(&TestNoID{Stuff: "More Test PSQL"}); err != nil {
+		t.Fatalf("error creating test on psqlDB. error: %v", err.Error())
+	}
+```
+- The above example is pulled from the tinyorm_multitenant_test. 
+- Utilizing the ```MultiConnect``` function, you can use the methods built into the dialects.MultiTenantDialectHandler{} struct.
+
+```
+type MultiTenantDialectHandler struct {
+	Handlers map[string]DialectHandler
+}
+
+// Append will add database handlers to the Handlers slice
+func (mtd *MultiTenantDialectHandler) Set(key string, handler DialectHandler) {
+	mtd.Handlers[key] = handler
+}
+
+// Empty will determine if there are not database handlers present
+func (mtd MultiTenantDialectHandler) Empty() bool {
+	return len(mtd.Handlers) == 0
+}
+
+// Switch allows the caller to alter to different databases to perform executions again
+func (mtd MultiTenantDialectHandler) SwitchDB(database string) DialectHandler {
+	if db, found := mtd.Handlers[database]; found {
+		return db
+	}
+
+	return nil
+}
+```
+
+## Setting timeouts:
+tinyorm allows for the setting of the following database/sql values for open/idle connections:
+```
+SetConnMaxIdleTime
+SetConnMaxLifetime
+SetMaxIdleConns
+SetMaxOpenConns
+```
+These can be set wtihin the database.yml file per connnection. If left blank, defaults will be used.
 Example:
 ```
 development:

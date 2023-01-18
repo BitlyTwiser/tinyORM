@@ -32,7 +32,6 @@ development:
   password: devPassword 
   host: 126.0.0.1
   port: 5431
-  pool: 4
 
 production-read-only:
   dialect: postgres
@@ -42,7 +41,6 @@ production-read-only:
   connect: false
   host: 126.0.0.1
   port: 5431
-  pool: 4
 ```
 
 - Connection without a flag will create a connection to EACH specific connection.

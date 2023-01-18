@@ -38,6 +38,12 @@ func (m *Mysql) Delete(model any) error {
 	return Delete(m.db, model, DIALECT_TYPE_MYSQL)
 }
 
+func (m *Mysql) BulkDelete(model any) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return BulkDelete(m.db, model, DIALECT_TYPE_MYSQL)
+}
+
 func (m *Mysql) Find(model any, args ...any) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()

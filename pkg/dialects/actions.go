@@ -76,7 +76,6 @@ func Update(db *sql.DB, model any, dialectType string) error {
 }
 
 // No id is present within the model and no args are passed, the FIRST recored (using limit 1) from the given model will be deleted
-// To delete results in bulk, pass in a slice. This will batch delete records, use with caution.
 // To delete records with values other than ID, you can insert a model without an ID, but with other fields present.
 // i.e. to delete a user by name: Delete(&User{name: "carl"})
 // Without an ID field, but with name present, only "carl" will be deleted
@@ -88,28 +87,7 @@ func Delete(db *sql.DB, model any, dialectType string) error {
 		return data.Err
 	}
 
-	m := reflect.Indirect(reflect.ValueOf(model))
-	if m.Kind() == reflect.Slice {
-		stmt, err := db.PrepareContext(context.Background(), fmt.Sprintf("DELETE FROM %s", data.TableName))
-		if err != nil {
-			return err
-		}
-		result, err := stmt.Exec()
-		if err != nil {
-			return err
-		}
-
-		rowsDeleted, err := result.RowsAffected()
-		if err != nil {
-			return err
-		}
-
-		logger.Log.LogEvent("info", "Deleted rows", "rows deleted", rowsDeleted)
-
-		return nil
-	}
-
-	// Means that no attributes were found on model and model is not a slice.
+	// Means that no attributes were found on model
 	if data.Query == "" {
 		logger.Log.LogEvent("info", "no records were found for the delete query")
 		return nil
@@ -128,6 +106,38 @@ func Delete(db *sql.DB, model any, dialectType string) error {
 	if c, err := result.RowsAffected(); err != nil {
 		return fmt.Errorf("error deleting records. Error: %s Rows Affected: %d", err.Error(), c)
 	}
+
+	return nil
+}
+
+// To delete results in bulk, pass in a slice. This will batch delete records for the given Model
+func BulkDelete(db *sql.DB, model any, dialectType string) error {
+	data := sqlbuilder.QueryBuilder("delete", model, dialectType)
+
+	if data.Err != nil {
+		return data.Err
+	}
+
+	m := reflect.Indirect(reflect.ValueOf(model))
+	if m.Kind() != reflect.Slice {
+		return fmt.Errorf("must pass in a slice to bulk delete records")
+	}
+
+	stmt, err := db.PrepareContext(context.Background(), fmt.Sprintf("DELETE FROM %s", data.TableName))
+	if err != nil {
+		return err
+	}
+	result, err := stmt.Exec()
+	if err != nil {
+		return err
+	}
+
+	rowsDeleted, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	logger.Log.LogEvent("info", "Deleted rows", "rows deleted", rowsDeleted)
 
 	return nil
 }

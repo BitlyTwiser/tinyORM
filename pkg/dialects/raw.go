@@ -20,12 +20,12 @@ func (rq *RawQuery) Exec() error {
 	result, err := rq.stmt.Exec(rq.args...)
 
 	if err != nil {
-		return logger.Log.LogError("error occured executing raw query.", err)
+		return logger.Log.LogError("error occurred executing raw query.", err)
 	}
 
 	rows, err := result.RowsAffected()
 	if err != nil {
-		return logger.Log.LogError("error occured calculating affected rows from raw query.", err)
+		return logger.Log.LogError("error occurred calculating affected rows from raw query.", err)
 	}
 	logger.Log.LogEvent("warn", "executed raw query", "rows affected", rows)
 
@@ -45,12 +45,12 @@ func (rq *RawQuery) All(model any) error {
 		if len(rq.args) > 0 {
 			rows, err = rq.stmt.Query(rq.args...)
 			if err != nil {
-				return logger.Log.LogError("error occured executing raw query", err)
+				return logger.Log.LogError("error occurred executing raw query", err)
 			}
 		} else {
 			rows, err = rq.stmt.Query()
 			if err != nil {
-				return logger.Log.LogError("error occured executing raw query", err)
+				return logger.Log.LogError("error occurred executing raw query", err)
 			}
 
 		}
@@ -102,7 +102,7 @@ func (rq *RawQuery) All(model any) error {
 			return logger.Log.LogError("no rows found for raw query call", err)
 		}
 
-		return logger.Log.LogError("error occured scanning raw query results", err)
+		return logger.Log.LogError("error occurred scanning raw query results", err)
 	}
 
 	return nil

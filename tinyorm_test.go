@@ -52,7 +52,7 @@ var (
 func TestCreate(t *testing.T) {
 	db, err := tinyorm.Connect(DATABASE)
 	if err != nil {
-		t.Fatalf("error occured connecting to database %s. %v", DATABASE, err.Error())
+		t.Fatalf("error occurred connecting to database %s. %v", DATABASE, err.Error())
 	}
 	createTests := map[string]struct {
 		action          string
@@ -82,7 +82,7 @@ func TestORMFunctionality(t *testing.T) {
 	db, err := tinyorm.Connect(DATABASE)
 
 	if err != nil {
-		t.Fatalf("error occured connecting to database %s. %v", DATABASE, err.Error())
+		t.Fatalf("error occurred connecting to database %s. %v", DATABASE, err.Error())
 	}
 
 	tests := map[string]struct {
@@ -184,11 +184,11 @@ func TestORMFunctionality(t *testing.T) {
 
 }
 
-// Similiar case as the create tests with the Delete tests. Run these after all other tests have executed
+// Similar case as the create tests with the Delete tests. Run these after all other tests have executed
 func TestDeleteData(t *testing.T) {
 	db, err := tinyorm.Connect(DATABASE)
 	if err != nil {
-		t.Fatalf("error occured connecting to database %s. %v", DATABASE, err.Error())
+		t.Fatalf("error occurred connecting to database %s. %v", DATABASE, err.Error())
 	}
 
 	deleteTests := map[string]struct {

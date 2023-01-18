@@ -17,7 +17,7 @@ To initiall perform the database connection, the following line can be used:
 The database string is any value that is found within the database.yml file.
 Also see the [multi-tenant](#multi-tenant-connections) section below on utlizing multiple database connections.
 
-### Database Yaml
+### Database YAML
 - Utilizing a simple database.yml file, one can enter multiple database connetions for the ORM to establish connections to.
 i.e. Development, Production, ReadOnly endpoint, FluentD etc..
 

@@ -172,7 +172,7 @@ A mixing of attributes to fit your deletion needs can be utilized or just specif
 Note: If the ID is present, the attributes are ignored! Th record with the ID that matches will be deleted
 
 ### BulkDelete:
-THough not a common use case, you can delete all values in a table, you can pass an empty slice of a specific model to the BulkDelete function.
+Though not a common use case, you can delete all values in a table, you can pass an empty slice of a specific model to the BulkDelete function.
 
 Example:
 ```

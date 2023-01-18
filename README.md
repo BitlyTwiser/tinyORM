@@ -2,7 +2,7 @@
 A tiny ORM for all of your basic data layer needs
 
 ## Premise:
-- TinyORM was crafted with simplicity in mind. Having used many ORM's, one item that was noticed was the size/complexity of the ORM's. The desire with tinyorm was to curate a functional, yet small, simple ORM that could take care of generic data layer transactions all while only utilizing the standard library and well known drivers. 
+TinyORM is a functional, small, and simple ORM that was created with simplicity as a primary goal and built only utilizing the standard library and well known database drivers. 
 
 ## Usage:
 ### Connecting:
@@ -15,8 +15,9 @@ To initiall perform the database connection, the following line can be used:
 	}
 ```
 The database string is any value that is found within the database.yml file.
+Also see the [multi-tenant](#multi-tenant-connections) section below on utlizing multiple database connections.
 
-### Database Yaml
+### Database YAML
 - Utilizing a simple database.yml file, one can enter multiple database connetions for the ORM to establish connections to.
 i.e. Development, Production, ReadOnly endpoint, FluentD etc..
 
@@ -31,7 +32,6 @@ development:
   password: devPassword 
   host: 126.0.0.1
   port: 5431
-  pool: 4
 
 production-read-only:
   dialect: postgres
@@ -41,7 +41,6 @@ production-read-only:
   connect: false
   host: 126.0.0.1
   port: 5431
-  pool: 4
 ```
 
 - Connection without a flag will create a connection to EACH specific connection.
@@ -394,74 +393,6 @@ SetMaxIdleConns
 SetMaxOpenConns
 ```
 These can be set wtihin the database.yml file per connnection. If left blank, database/sql defaults will be used.
-Example:
-```
-development:
-  dialect: postgres
-  database: tinyorm
-  user: tiny 
-  password: password123!
-  connect: true
-  host: 127.0.0.1
-  port: 5432
-  name: "development"
-  maxIdleTime: 60
-  maxLifetime: 100
-  maxIdleConn: 0
-  maxOpenConn: 10
-```
-## Multi-Tenant connections:
-- tinyORM has the ability to connect and keep-alive multiple connections to different databases.
-- Utilizing the multi-connect utility, you can connect to multiple databases and switch between them easily.
-
-Example:
-```
-	mtc, err := tinyorm.MultiConnect(databaseConnections...)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if err := mtc.SwitchDB("development").Create(&TestNoID{Stuff: "More Test PSQL"}); err != nil {
-		t.Fatalf("error creating test on psqlDB. error: %v", err.Error())
-	}
-```
-- The above example is pulled from the tinyorm_multitenant_test. 
-- Utilizing the ```MultiConnect``` function, you can use the methods built into the dialects.MultiTenantDialectHandler{} struct.
-
-```
-type MultiTenantDialectHandler struct {
-	Handlers map[string]DialectHandler
-}
-
-// Append will add database handlers to the Handlers slice
-func (mtd *MultiTenantDialectHandler) Set(key string, handler DialectHandler) {
-	mtd.Handlers[key] = handler
-}
-
-// Empty will determine if there are not database handlers present
-func (mtd MultiTenantDialectHandler) Empty() bool {
-	return len(mtd.Handlers) == 0
-}
-
-// Switch allows the caller to alter to different databases to perform executions again
-func (mtd MultiTenantDialectHandler) SwitchDB(database string) DialectHandler {
-	if db, found := mtd.Handlers[database]; found {
-		return db
-	}
-
-	return nil
-}
-```
-
-## Setting timeouts:
-tinyorm allows for the setting of the following database/sql values for open/idle connections:
-```
-SetConnMaxIdleTime
-SetConnMaxLifetime
-SetMaxIdleConns
-SetMaxOpenConns
-```
-These can be set wtihin the database.yml file per connnection. If left blank, defaults will be used.
 Example:
 ```
 development:

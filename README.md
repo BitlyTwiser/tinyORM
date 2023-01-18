@@ -144,21 +144,9 @@ fmt.Println(attributeUser)
 
 ```
 ### Delete:
-Delete can be used to delete specifc database values or all values of a table.
+Delete can be used to delete specifc database values 
 
-To delete all values in a table, you can pass an empty slice of a specific model to delete.
-Example:
-```
-
-type Vehicle struct {}
-type Vehicles []Vehicle
-
-v := new(Vehicles)
-
-db.Delete(v) // Will delete ALL vehicles.
-```
-
-For the more common operation, deleteing single values, you can pass in a model with an ID of the object you wish to delete, or you can pass a model with attributes you wish to match on.
+To utilize delete, you can pass in a model with an ID of the object you wish to delete, or you can pass a model with attributes you wish to match on.
 Example:
 ```
 type User struct {
@@ -183,6 +171,19 @@ db.Delete(tertiaryUser) // Will delete the user bob with age 111
 A mixing of attributes to fit your deletion needs can be utilized or just specific ID's of the object. You can conjoin the delete functionality with Find/Where to discover a user with a query, then delete said user.
 Note: If the ID is present, the attributes are ignored! Th record with the ID that matches will be deleted
 
+### BulkDelete:
+THough not a common use case, you can delete all values in a table, you can pass an empty slice of a specific model to the BulkDelete function.
+
+Example:
+```
+
+type Vehicle struct {}
+type Vehicles []Vehicle
+
+v := new(Vehicles)
+
+db.BulkDelete(v) // Will delete ALL vehicles.
+```
 ### Where:
 Where is a more advanced utility than Find allowing the user to craft statements that are used to locate objects in the database.
 The user is expected to pass in a statement and any arguments to be used in conjunction with the statement.

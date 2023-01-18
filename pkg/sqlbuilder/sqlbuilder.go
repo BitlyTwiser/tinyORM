@@ -10,7 +10,7 @@ import (
 	"github.com/google/uuid"
 )
 
-// Standard data manupulation operations
+// Standard data manipulation operations
 const (
 	SELECT = "select"
 	CREATE = "create"

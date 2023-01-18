@@ -11,7 +11,7 @@ To initiall perform the database connection, the following line can be used:
   database := "development"
 	db, err := tinyorm.Connect(database)
 	if err != nil {
-		t.Fatalf("error occured connecting to database %s. %v", database, err.Error())
+		t.Fatalf("error occurred connecting to database %s. %v", database, err.Error())
 	}
 ```
 The database string is any value that is found within the database.yml file.

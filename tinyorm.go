@@ -23,7 +23,7 @@ func Connect(connection string) (dialects.DialectHandler, error) {
 	err := connections.InitDatabaseConnection(connection)
 
 	if err != nil {
-		return nil, logger.Log.LogError("error initalizing database connection", err)
+		return nil, logger.Log.LogError("error initializing database connection", err)
 	}
 
 	if handle, found := connections.Connections[connection]; found {

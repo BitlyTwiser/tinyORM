@@ -1,4 +1,4 @@
-# tinyORM
+# tinyORM [![Go Report Card](https://goreportcard.com/badge/github.com/BitlyTwiser/tinyORM)](https://goreportcard.com/report/github.com/BitlyTwiser/tinyORM)
 A tiny ORM for all of your basic data layer needs
 
 ## Premise:

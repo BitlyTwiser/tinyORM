@@ -20,6 +20,7 @@ type DialectHandler interface {
 	Create(model any) error
 	Update(model any) error
 	Delete(model any) error
+	BulkDelete(model any) error
 	Where(model any, stmt string, limit int, args ...any) error
 	Find(model any, args ...any) error
 	Raw(query string, args ...any) (*RawQuery, error)

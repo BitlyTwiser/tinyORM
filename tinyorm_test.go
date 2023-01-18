@@ -208,17 +208,27 @@ func TestDeleteData(t *testing.T) {
 		"Test Delete Vehicle using attributes":      {action: "delete", adjustModel: false, model: &Vehicle{Color: "Blue"}},
 		"Test Should not Delete User":               {action: "delete", adjustModel: false, model: new(User)},
 		"Test Should not Delete Vehicle":            {action: "delete", adjustModel: false, model: new(Vehicle)},
-		"Test Delete Users":                         {action: "delete", adjustModel: false, model: new(Users)},    // Will Delete ALL Users
-		"Test Delete Vehicles":                      {action: "delete", adjustModel: false, model: new(Vehicles)}, // Will Delete ALL Vehicles
+		"Test Delete Users":                         {action: "delete-bulk", adjustModel: false, model: new(Users)},    // Will Delete ALL Users
+		"Test Delete Vehicles":                      {action: "delete-bulk", adjustModel: false, model: new(Vehicles)}, // Will Delete ALL Vehicles
 		"Test Delete no ID model":                   {action: "delete", adjustModel: false, model: new(TestNoIDs)},
 	}
 
 	for name, test := range deleteTests {
-		t.Run(name, func(t *testing.T) {
-			if err := db.Delete(test.model); err != nil {
-				t.Fatalf("error updating model. error: %v", err.Error())
-			}
-		})
+		switch test.action {
+		case "delete":
+			t.Run(name, func(t *testing.T) {
+				if err := db.Delete(test.model); err != nil {
+					t.Fatalf("error updating model. error: %v", err.Error())
+				}
+			})
+		case "delete-bulk":
+			t.Run(name, func(t *testing.T) {
+				if err := db.BulkDelete(test.model); err != nil {
+					t.Fatalf("error updating model. error: %v", err.Error())
+				}
+			})
+
+		}
 	}
 }
 

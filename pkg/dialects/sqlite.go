@@ -42,6 +42,12 @@ func (s *SQLite) Delete(model any) error {
 	return Delete(s.db, model, DIALECT_TYPE_SQLITE)
 }
 
+func (s *SQLite) BulkDelete(model any) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return BulkDelete(s.db, model, DIALECT_TYPE_SQLITE)
+}
+
 func (s *SQLite) Find(model any, args ...any) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()

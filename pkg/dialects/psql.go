@@ -37,6 +37,12 @@ func (pd *Postgres) Delete(model any) error {
 	return Delete(pd.db, model, DIALECT_TYPE_PSQL)
 }
 
+func (pd *Postgres) BulkDelete(model any) error {
+	pd.mu.Lock()
+	defer pd.mu.Unlock()
+	return BulkDelete(pd.db, model, DIALECT_TYPE_PSQL)
+}
+
 func (pd *Postgres) Find(model any, args ...any) error {
 	pd.mu.Lock()
 	defer pd.mu.Unlock()

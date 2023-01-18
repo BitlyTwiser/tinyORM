@@ -58,7 +58,6 @@ development:
 ```
 - Note: only the postgres connection will be established, any repeating connections of the same name will be ignored.
 - Also see the [multi-tenant](#multi-tenant-connections) section below on utlizing multiple database connections.
-
 ### Create:
 The create functionality will create database records per the given model. All modesl are pluralized, thus they are expected to be passedin as a singular case. If the suffix of the model name is already 's' or pluralized, then the no additional pluralizations are done.
 i.e. User -> Users, but if the pluralized Users is passed, then naming will remain as Users.

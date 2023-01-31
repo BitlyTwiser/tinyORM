@@ -46,7 +46,9 @@ func InitDatabaseConnection(dbConnType string) error {
 		return fmt.Errorf("please check provided dialect in database.yml. Provided dialect: %v", connConfig.Dialect)
 	}
 
-	db, err = sql.Open(connConfig.Dialect, handle.QueryString(*connConfig))
+	handle.SetConfig(*connConfig)
+
+	db, err = sql.Open(connConfig.Dialect, handle.QueryString())
 	if err != nil {
 		return err
 	}

@@ -15,8 +15,9 @@ import (
 const DIALECT_TYPE_SQLITE = "sqlite3"
 
 type SQLite struct {
-	db *sql.DB
-	mu sync.Mutex
+	db     *sql.DB
+	mu     sync.Mutex
+	config DBConfig
 }
 
 var _ DialectHandler = (*SQLite)(nil)
@@ -70,11 +71,19 @@ func (s *SQLite) SetDB(connDB *sql.DB) {
 	s.db = connDB
 }
 
-func (s *SQLite) QueryString(connInfo DBConfig) string {
+func (s *SQLite) SetConfig(config DBConfig) {
+	s.config = config
+}
+
+func (s *SQLite) GetConfig() DBConfig {
+	return s.config
+}
+
+func (s *SQLite) QueryString() string {
 	var dsn strings.Builder
 
-	if _, err := os.Stat(connInfo.Path); err != nil {
-		fullPath, err := filepath.Abs(connInfo.Path)
+	if _, err := os.Stat(s.config.Path); err != nil {
+		fullPath, err := filepath.Abs(s.config.Path)
 		if err != nil {
 			logger.Log.LogError("Could not determine file path", fmt.Errorf("could not build filepath for creating sqlite database"))
 			return ""
@@ -89,18 +98,18 @@ func (s *SQLite) QueryString(connInfo DBConfig) string {
 	}
 
 	dsn.WriteString("file:")
-	dsn.WriteString(connInfo.Path)
+	dsn.WriteString(s.config.Path)
 	// Write back early if not auth as the DSN is complete
-	if !connInfo.Auth {
+	if !s.config.Auth {
 		return dsn.String()
 	}
 
 	// Complie DSN for encrypting sqlite database
 	dsn.WriteString("_auth&")
 	dsn.WriteString("_auth_user=")
-	dsn.WriteString(connInfo.User)
+	dsn.WriteString(s.config.User)
 	dsn.WriteString("&_auth_pass=")
-	dsn.WriteString(connInfo.Password)
+	dsn.WriteString(s.config.Password)
 	dsn.WriteString("&_auth_crypt=SHA512") // Default to SHA512 encoding
 
 	return dsn.String()

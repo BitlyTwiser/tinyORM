@@ -25,7 +25,9 @@ type DialectHandler interface {
 	Find(model any, args ...any) error
 	Raw(query string, args ...any) (*RawQuery, error)
 	SetDB(connDB *sql.DB)
-	QueryString(connInfo DBConfig) string
+	QueryString() string
+	SetConfig(config DBConfig)
+	GetConfig() DBConfig
 }
 
 type DBConfig struct {

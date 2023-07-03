@@ -11,8 +11,9 @@ import (
 const DIALECT_TYPE_MYSQL = "mysql"
 
 type Mysql struct {
-	db *sql.DB
-	mu sync.Mutex
+	db     *sql.DB
+	mu     sync.Mutex
+	config DBConfig
 }
 
 var _ DialectHandler = (*Mysql)(nil)
@@ -67,6 +68,14 @@ func (m *Mysql) SetDB(connDB *sql.DB) {
 	m.db = connDB
 }
 
-func (m *Mysql) QueryString(connInfo DBConfig) string {
-	return fmt.Sprintf("%s:%s@tcp(%s:%d)/%s", connInfo.User, connInfo.Password, connInfo.Host, connInfo.Port, connInfo.Database)
+func (m *Mysql) SetConfig(config DBConfig) {
+	m.config = config
+}
+
+func (m *Mysql) GetConfig() DBConfig {
+	return m.config
+}
+
+func (m *Mysql) QueryString() string {
+	return fmt.Sprintf("%s:%s@tcp(%s:%d)/%s", m.config.User, m.config.Password, m.config.Host, m.config.Port, m.config.Database)
 }

@@ -9,8 +9,9 @@ import (
 )
 
 type Postgres struct {
-	db *sql.DB
-	mu sync.Mutex
+	db     *sql.DB
+	mu     sync.Mutex
+	config DBConfig
 }
 
 const DIALECT_TYPE_PSQL = "psql"
@@ -65,6 +66,14 @@ func (pd *Postgres) SetDB(connDB *sql.DB) {
 	pd.db = connDB
 }
 
-func (pd *Postgres) QueryString(c DBConfig) string {
-	return fmt.Sprintf("host=%s port=%d user=%s password =%s dbname=%s sslmode=%s", c.Host, c.Port, c.User, c.Password, c.Database, "disable")
+func (pd *Postgres) SetConfig(config DBConfig) {
+	pd.config = config
+}
+
+func (pd *Postgres) GetConfig() DBConfig {
+	return pd.config
+}
+
+func (pd *Postgres) QueryString() string {
+	return fmt.Sprintf("host=%s port=%d user=%s password =%s dbname=%s sslmode=%s", pd.config.Host, pd.config.Port, pd.config.User, pd.config.Password, pd.config.Database, "disable")
 }

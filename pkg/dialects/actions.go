@@ -245,7 +245,7 @@ func Find(db *sql.DB, model any, dialectType string, args ...any) error {
 	row := stmt.QueryRow(args[0])
 	if err := row.Scan(data.ModelAttributes()...); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return fmt.Errorf("no rows found for id: %v", args[0])
+			return err
 		}
 
 		return fmt.Errorf("error scanning rows for id: %v. Error: %v", args[0], err.Error())

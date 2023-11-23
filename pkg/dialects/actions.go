@@ -318,7 +318,7 @@ func Where(db *sql.DB, model any, stmt string, limit int, dialectType string, ar
 
 			if err := rows.Scan(sqlbuilder.PointerAttributes(newVal)...); err != nil {
 				if errors.Is(err, sql.ErrNoRows) {
-					return fmt.Errorf("there are no rows for for this query")
+					return err
 				}
 				return err
 			}
@@ -354,7 +354,7 @@ func Where(db *sql.DB, model any, stmt string, limit int, dialectType string, ar
 
 	if err := row.Scan(data.ModelAttributes()...); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return fmt.Errorf("no rows found for table name %s", data.TableName)
+			return err
 		}
 	}
 

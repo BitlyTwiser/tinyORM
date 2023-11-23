@@ -99,7 +99,7 @@ func (rq *RawQuery) All(model any) error {
 	row := rq.stmt.QueryRow(rq.args...)
 	if err := row.Scan(sqlbuilder.PointerAttributes(reflect.ValueOf(model))...); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return logger.Log.LogError("no rows found for raw query call", err)
+			return err
 		}
 
 		return logger.Log.LogError("error occurred scanning raw query results", err)
